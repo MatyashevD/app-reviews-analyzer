@@ -1,8 +1,8 @@
-streamlit
-google-play-scraper
-app-store-scraper
-spacy
-pandas
-matplotlib
-python-dateutil
+streamlit==1.27.0
+google-play-scraper==1.2.7
+app-store-scraper==0.3.5
+spacy==3.7.5
+pandas==2.2.3
+matplotlib==3.10.0
+python-dateutil==2.9.0
 ru-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/ru_core_news_sm-3.7.0/ru_core_news_sm-3.7.0.tar.gz
