@@ -1,11 +1,11 @@
 streamlit==1.27.0
 google-play-scraper==1.2.7
 app-store-scraper==0.3.5
-spacy==3.7.5
+spacy==3.1.0
 pandas==2.2.3
 matplotlib==3.10.0
 python-dateutil==2.9.0
-torch
-transformers
+transformers==4.11.3
+torch==1.10.0
 pillow>=7.1.0,<10  # Используйте более новую версию Pillow
 ru-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/ru_core_news_sm-3.7.0/ru_core_news_sm-3.7.0.tar.gz
