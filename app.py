@@ -89,7 +89,7 @@ def analyze_sentiments(reviews: list) -> list:
         return sentiments
     except Exception as e:
         st.error(f"Ошибка инициализации модели: {str(e)}")
-        return [{'label': 'NEUTRAL', 'score': 0.5} for _ in reviews]
+        return [{'label': 'NEUTRAL', 'score': 0.1} for _ in reviews]
 
 def extract_key_phrases(text: str) -> list:
     try:
