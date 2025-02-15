@@ -190,7 +190,7 @@ def display_deepseek_analysis(analysis: Dict[str, Any]):
 
 def main():
     st.set_page_config(page_title="AI Анализатор отзывов", layout="wide")
-    st.title("📱 AI Анализатор отзывов с DeepSeek")
+    st.title("📱 AI Анализ отзывов")
     
     # Инициализация сессии
     session_defaults = {
