@@ -11,10 +11,10 @@ from collections import Counter, defaultdict
 # Инициализация NLP модели
 def load_nlp_model():
     try:
-        return spacy.load("ru_core_news_lg")
+        return spacy.load("ru_core_news_sm")
     except:
-        spacy.cli.download("ru_core_news_lg")
-        return spacy.load("ru_core_news_lg")
+        spacy.cli.download("ru_core_news_sm")
+        return spacy.load("ru_core_news_sm")
 
 nlp = load_nlp_model()  # Глобальная инициализация
 
