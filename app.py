@@ -1,20 +1,23 @@
 import datetime
+import json
+import re
+import requests
 import spacy
 import pandas as pd
-import re
 import streamlit as st
 import matplotlib.pyplot as plt
-import requests
 from google_play_scraper import reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import Counter, defaultdict
 from typing import List, Dict, Any
 
+# Инициализация NLP
 nlp = spacy.load("ru_core_news_sm")
 
-# DeepSeek API конфигурация
-DEEPSEEK_API_URL = "https://api.deepseek.com"
-MAX_BATCH_SIZE = 10  # Для соблюдения лимитов API
+# Конфигурация DeepSeek
+DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
+MODEL_NAME = "deepseek-chat"
+MAX_BATCH_SIZE = 5  # Уменьшено для безопасности
 
 def extract_google_play_id(url: str) -> str:
     match = re.search(r'id=([a-zA-Z0-9._-]+)', url)
@@ -76,205 +79,200 @@ def analyze_with_deepseek(reviews: List[tuple]) -> List[Dict[str, Any]]:
     try:
         for i in range(0, len(texts), MAX_BATCH_SIZE):
             batch = texts[i:i+MAX_BATCH_SIZE]
+            
             payload = {
-                "texts": batch,
-                "features": ["sentiment", "entities", "topics", "keywords"],
-                "language": "ru"
+                "model": MODEL_NAME,
+                "messages": [{
+                    "role": "user",
+                    "content": f"""
+                    Проанализируй следующие отзывы. Верни JSON-массив где каждый элемент содержит:
+                    - sentiment (число от 1 до 5)
+                    - entities (список объектов из текста)
+                    - topics (ключевые темы)
+                    Отзывы: {batch}
+                    """
+                }],
+                "temperature": 0.3,
+                "response_format": {"type": "json_object"}
             }
             
             response = requests.post(DEEPSEEK_API_URL, json=payload, headers=headers)
             response.raise_for_status()
-            results.extend(response.json()['results'])
             
-        return results
+            if response.status_code == 200:
+                content = response.json()['choices'][0]['message']['content']
+                try:
+                    parsed = json.loads(content)
+                    if 'results' in parsed:
+                        results.extend(parsed['results'])
+                except Exception as e:
+                    st.error(f"Ошибка парсинга: {str(e)}")
+            
+            elif response.status_code == 429:
+                st.error("Превышен лимит запросов. Попробуйте позже")
+                break
+            
     except Exception as e:
-        st.error(f"Ошибка DeepSeek API: {str(e)}")
-        return []
+        st.error(f"Ошибка API: {str(e)}")
+    
+    return results
 
 def extract_deepseek_insights(reviews: List[tuple], deepseek_results: List[Dict]) -> Dict[str, Any]:
-    if not deepseek_results:
-        return {}
+    insights = {
+        "entities": [],
+        "topics": [],
+        "sentiments": [],
+        "avg_sentiment": 0
+    }
     
-    # Анализ сущностей
+    if not deepseek_results:
+        return insights
+    
+    # Обработка сущностей
     entity_counter = Counter()
     entity_examples = defaultdict(list)
     
-    # Анализ тем
+    # Обработка тем
     topic_counter = Counter()
     
     # Сбор метрик
     sentiments = []
     
     for idx, result in enumerate(deepseek_results):
-        # Обработка сущностей
+        # Тональность
+        if 'sentiment' in result:
+            sentiments.append(float(result['sentiment']))
+        
+        # Сущности
         for entity in result.get('entities', []):
-            entity_text = entity['text'].lower()
+            entity_text = entity.lower()
             entity_counter[entity_text] += 1
             if len(entity_examples[entity_text]) < 3:
                 entity_examples[entity_text].append({
                     "text": reviews[idx][1],
-                    "sentiment": result['sentiment'],
                     "date": reviews[idx][0]
                 })
         
-        # Обработка тем
+        # Темы
         for topic in result.get('topics', []):
-            topic_counter[topic] += 1
-        
-        # Сбор тональности
-        sentiments.append(result.get('sentiment', 3.0))
+            topic_counter[topic.lower()] += 1
     
-    # Подготовка данных
-    top_entities = [{
+    # Формирование результатов
+    insights['entities'] = [{
         "entity": entity,
         "count": count,
-        "sentiment": sum(e['sentiment'] for e in entity_examples[entity])/len(entity_examples[entity]),
         "examples": entity_examples[entity]
     } for entity, count in entity_counter.most_common(15)]
     
-    top_topics = [{
+    insights['topics'] = [{
         "topic": topic,
-        "count": count,
-        "keywords": ", ".join(result.get('keywords', [])[:5])
+        "count": count
     } for topic, count in topic_counter.most_common(10)]
     
-    return {
-        "entities": top_entities,
-        "topics": top_topics,
-        "sentiments": sentiments,
-        "avg_sentiment": sum(sentiments)/len(sentiments) if sentiments else 0
-    }
+    if sentiments:
+        insights['sentiments'] = sentiments
+        insights['avg_sentiment'] = sum(sentiments) / len(sentiments)
+    
+    return insights
 
 def display_deepseek_analysis(analysis: Dict[str, Any]):
-    st.header("🔍 DeepSeek Advanced Analytics")
+    st.header("🔍 DeepSeek Analytics")
+    
+    if not analysis['sentiments']:
+        st.warning("Данные для анализа отсутствуют")
+        return
     
     # Метрики
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Средняя тональность", f"{analysis['avg_sentiment']:.2f}/5")
-    with col2:
-        positive = sum(1 for s in analysis['sentiments'] if s > 3.5)
+    cols = st.columns(3)
+    with cols[0]:
+        st.metric("Средняя оценка", f"{analysis['avg_sentiment']:.2f}/5")
+    with cols[1]:
+        positive = sum(s > 3.5 for s in analysis['sentiments'])
         st.metric("Позитивные отзывы", f"{positive} ({positive/len(analysis['sentiments'])*100:.1f}%)")
-    with col3:
-        critical = sum(1 for s in analysis['sentiments'] if s < 2.0)
+    with cols[2]:
+        critical = sum(s < 2.0 for s in analysis['sentiments'])
         st.metric("Критические проблемы", critical)
     
     # Сущности
-    st.subheader("🏷️ Ключевые сущности")
-    entity_df = pd.DataFrame(analysis['entities'])
-    if not entity_df.empty:
+    st.subheader("🏷️ Важные упоминания")
+    if analysis['entities']:
+        df = pd.DataFrame(analysis['entities'])
         st.dataframe(
-            entity_df[['entity', 'count', 'sentiment']]
-            .style.background_gradient(subset=['sentiment'], cmap='RdYlGn', vmin=1, vmax=5)
-            .format({'sentiment': "{:.2f}"}),
+            df[['entity', 'count']].style.bar(subset=['count'], color='#5fba7d'),
             height=400
         )
     else:
         st.info("Сущности не обнаружены")
     
     # Темы
-    st.subheader("🧩 Автоматические темы")
-    topic_df = pd.DataFrame(analysis['topics'])
-    if not topic_df.empty:
+    st.subheader("🧩 Основные темы")
+    if analysis['topics']:
+        topic_df = pd.DataFrame(analysis['topics'])
         st.dataframe(
-            topic_df.style.bar(subset=['count'], color='#5fba7d'),
-            column_config={
-                "keywords": st.column_config.ListColumn(
-                    width="large",
-                    help="Связанные ключевые слова"
-                )
-            }
+            topic_df.style.background_gradient(subset=['count'], cmap='Blues'),
+            hide_index=True
         )
     else:
         st.info("Темы не обнаружены")
 
 def main():
-    st.set_page_config(page_title="AI Анализатор отзывов", layout="wide")
-    st.title("📱 AI Анализ отзывов")
+    st.set_page_config(page_title="AI Анализатор", layout="wide")
+    st.title("📱 Анализатор отзывов с DeepSeek AI")
     
-    # Инициализация сессии
-    session_defaults = {
-        'analysis_data': None,
-        'selected_word': None,
-        'active_tab': "Топ упоминаний"
-    }
-    for key, value in session_defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
-
+    # Инициализация состояния
+    if 'analysis_data' not in st.session_state:
+        st.session_state.analysis_data = None
+    
     # Ввод данных
     col1, col2 = st.columns(2)
     with col1:
-        gp_url = st.text_input("Ссылка Google Play", placeholder="https://play.google.com/store/apps/details?id=...")
+        gp_url = st.text_input("Google Play URL", help="Пример: https://play.google.com/store/apps/details?id=com.example")
     with col2:
-        ios_url = st.text_input("Ссылка App Store", placeholder="https://apps.apple.com/ru/app/...")
+        ios_url = st.text_input("App Store URL", help="Пример: https://apps.apple.com/ru/app/example-app/id123456789")
     
     start_date = st.date_input("Начальная дата", datetime.date(2024, 1, 1))
     end_date = st.date_input("Конечная дата", datetime.date.today())
     
-    if st.button("🚀 Запустить анализ", type="primary"):
-        st.session_state.analysis_data = None
-        start_dt = datetime.datetime.combine(start_date, datetime.time.min)
-        end_dt = datetime.datetime.combine(end_date, datetime.time.max)
-        
-        with st.spinner("🕸️ Сбор отзывов..."):
+    if st.button("🚀 Анализировать", type="primary"):
+        with st.spinner("Собираем отзывы..."):
             gp_revs = get_google_play_reviews(gp_url)
             ios_revs = get_app_store_reviews(ios_url)
-        
-        all_reviews = gp_revs + ios_revs
-        if not all_reviews:
-            st.error("Отзывы не найдены!")
-            return
+            all_reviews = gp_revs + ios_revs
             
-        filtered_reviews = filter_reviews_by_date(all_reviews, start_dt, end_dt)
-        
-        with st.spinner("🤖 Анализ с DeepSeek..."):
-            deepseek_results = analyze_with_deepseek(filtered_reviews)
-            deepseek_analysis = extract_deepseek_insights(filtered_reviews, deepseek_results)
+            if not all_reviews:
+                st.error("Отзывы не найдены!")
+                return
+                
+            filtered = filter_reviews_by_date(
+                all_reviews,
+                datetime.datetime.combine(start_date, datetime.time.min),
+                datetime.datetime.combine(end_date, datetime.time.max)
+            )
+            
+        with st.spinner("AI-анализ..."):
+            deepseek_results = analyze_with_deepseek(filtered)
+            analysis = extract_deepseek_insights(filtered, deepseek_results)
             
             st.session_state.analysis_data = {
-                'basic': {
-                    'reviews': filtered_reviews,
-                    'gp_count': len([r for r in filtered_reviews if r[2] == 'Google Play']),
-                    'ios_count': len([r for r in filtered_reviews if r[2] == 'App Store'])
+                "stats": {
+                    "total": len(filtered),
+                    "gp": len(gp_revs),
+                    "ios": len(ios_revs)
                 },
-                'deepseek': deepseek_analysis
+                "analysis": analysis
             }
-
+    
     if st.session_state.analysis_data:
         data = st.session_state.analysis_data
         
-        # Общая информация
-        st.subheader("📊 Основные метрики")
-        cols = st.columns(4)
-        cols[0].metric("Всего отзывов", len(data['basic']['reviews']))
-        cols[1].metric("Google Play", data['basic']['gp_count'])
-        cols[2].metric("App Store", data['basic']['ios_count'])
-        cols[3].metric("Качество анализа", 
-                      f"{len(data['deepseek']['sentiments'])/len(data['basic']['reviews'])*100:.1f}%")
+        st.subheader("📊 Общая статистика")
+        cols = st.columns(3)
+        cols[0].metric("Всего отзывов", data['stats']['total'])
+        cols[1].metric("Google Play", data['stats']['gp'])
+        cols[2].metric("App Store", data['stats']['ios'])
         
-        # Вкладки
-        tabs = ["📌 Топ упоминаний", "🧭 Ручные темы", "🔍 Детализация", "🤖 DeepSeek AI"]
-        st.session_state.active_tab = st.radio(
-            "Режимы анализа:",
-            tabs,
-            index=tabs.index(st.session_state.active_tab),
-            horizontal=True,
-            label_visibility="collapsed"
-        )
-
-        if st.session_state.active_tab == "🤖 DeepSeek AI":
-            display_deepseek_analysis(data['deepseek'])
-            
-            # Дополнительные графики
-            st.subheader("📈 Динамика тональности")
-            sentiment_df = pd.DataFrame({
-                "Дата": [r[0] for r in data['basic']['reviews']],
-                "Тональность": data['deepseek']['sentiments']
-            })
-            st.line_chart(sentiment_df.set_index('Дата')['Тональность'])
-            
-        # Остальные вкладки можно дополнить аналогично...
+        st.markdown("---")
+        display_deepseek_analysis(data['analysis'])
 
 if __name__ == "__main__":
     main()
