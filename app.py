@@ -135,17 +135,22 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         cols[2].metric("App Store", analysis['platform_counts']['App Store'])
         
         st.subheader("📈 Распределение тональности")
+        
+        # Добавляем отладочный вывод
+        st.write("Примеры меток тональности:", analysis['sentiments'][:3])
+        
+        # Исправляем ключи согласно выходу модели
         sentiment_counts = {
-            'Позитивные': sum(1 for s in analysis['sentiments'] if s['label'] == 'POSITIVE'),
-            'Нейтральные': sum(1 for s in analysis['sentiments'] if s['label'] == 'NEUTRAL'),
-            'Негативные': sum(1 for s in analysis['sentiments'] if s['label'] == 'NEGATIVE')
+            'Позитивные': sum(1 for s in analysis['sentiments'] if s['label'].upper() == 'POSITIVE'),
+            'Нейтральные': sum(1 for s in analysis['sentiments'] if s['label'].upper() == 'NEUTRAL'),
+            'Негативные': sum(1 for s in analysis['sentiments'] if s['label'].upper() == 'NEGATIVE')
         }
         
         if sum(sentiment_counts.values()) > 0:
             sentiment_df = pd.DataFrame.from_dict(sentiment_counts, orient='index', columns=['Количество'])
             st.bar_chart(sentiment_df)
         else:
-            st.warning("Нет данных для отображения тональности")
+            st.warning(f"Нет данных для отображения. Всего записей: {len(analysis['sentiments']}")
         
         st.subheader("🔑 Ключевые упоминания")
         if analysis['key_phrases']:
