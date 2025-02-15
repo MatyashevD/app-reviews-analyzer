@@ -159,6 +159,5 @@ def main():
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = "Топ упоминаний"
 
-    col1
-::contentReference[oaicite:0]{index=0}
+ 
  
