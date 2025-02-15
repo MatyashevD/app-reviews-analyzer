@@ -150,7 +150,7 @@ def display_analysis(analysis: dict, filtered_reviews: list):
             sentiment_df = pd.DataFrame.from_dict(sentiment_counts, orient='index', columns=['Количество'])
             st.bar_chart(sentiment_df)
         else:
-            st.warning(f"Нет данных для отображения. Всего записей: {len(analysis['sentiments']}")
+            st.warning(f"Нет данных для отображения. Всего записей: {len(analysis['sentiments']}"))
         
         st.subheader("🔑 Ключевые упоминания")
         if analysis['key_phrases']:
