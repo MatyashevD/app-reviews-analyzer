@@ -7,13 +7,15 @@ import matplotlib.pyplot as plt
 from google_play_scraper import reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import Counter, defaultdict
+from transformer import pipeline
 
 # Инициализация NLP только для русского языка
-try:
-    nlp = spacy.load("ru_core_news_sm")
-except:
-    spacy.cli.download("ru_core_news_sm")
-    nlp = spacy.load("ru_core_news_sm")
+def load_nlp_model():
+    try:
+        return spacy.load("ru_core_news_sm")
+    except OSError:
+        spacy.cli.download("ru_core_news_sm")
+        return spacy.load("ru_core_news_sm")
 
 # Модифицированная инициализация модели с кешированием
 @st.cache_resource
