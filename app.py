@@ -16,7 +16,7 @@ def load_nlp_model():
         spacy.cli.download("ru_core_news_sm")
         return spacy.load("ru_core_news_sm")
 
-nlp = load_nlp_model()  # Глобальная инициализация
+nlp = load_nlp_model()
 
 @st.cache_resource(show_spinner="Загрузка модели анализа тональности...")
 def load_sentiment_model():
@@ -27,7 +27,7 @@ def load_sentiment_model():
         framework="pt",
         device=-1
     )
-    
+
 def extract_google_play_id(url: str) -> str:
     match = re.search(r'id=([a-zA-Z0-9._-]+)', url)
     return match.group(1) if match else None
@@ -77,23 +77,42 @@ def filter_reviews_by_date(reviews: list, start_date: datetime.datetime, end_dat
     return [r for r in reviews if start_date <= r[0] <= end_date]
 
 def analyze_sentiments(reviews: list) -> list:
-    sentiment_analyzer = load_sentiment_model()
-    sentiments = []
-    for _, text, _ in reviews:
-        try:
-            result = sentiment_analyzer(text[:512], truncation=True)[0]  # Ограничение длины текста
+    try:
+        sentiment_analyzer = load_sentiment_model()
+        sentiments = []
+        for _, text, _ in reviews:
+            result = sentiment_analyzer(text[:512], truncation=True)[0]
             sentiments.append({
                 'label': result['label'],
                 'score': result['score']
             })
-        except Exception as e:
-            st.error(f"Ошибка анализа: {str(e)}")
-            sentiments.append({'label': 'NEUTRAL', 'score': 0.5})
-    return sentiments
+        return sentiments
+    except Exception as e:
+        st.error(f"Ошибка инициализации модели: {str(e)}")
+        return [{'label': 'NEUTRAL', 'score': 0.5} for _ in reviews]
 
 def extract_key_phrases(text: str) -> list:
-    doc = nlp(text)
-    return [chunk.text for chunk in doc.noun_chunks if len(chunk.text.split()) > 1]
+    try:
+        doc = nlp(text)
+        phrases = []
+        current_phrase = []
+        
+        for token in doc:
+            if token.pos_ in ['NOUN', 'PROPN', 'ADJ']:
+                current_phrase.append(token.text)
+            else:
+                if len(current_phrase) > 1:
+                    phrases.append(' '.join(current_phrase))
+                current_phrase = []
+        
+        if len(current_phrase) > 1:
+            phrases.append(' '.join(current_phrase))
+            
+        return phrases
+    
+    except Exception as e:
+        st.error(f"Ошибка обработки текста: {str(e)}")
+        return []
 
 def analyze_reviews(reviews: list) -> dict:
     analysis = {
