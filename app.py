@@ -13,7 +13,7 @@ from typing import List, Dict, Any
 nlp = spacy.load("ru_core_news_sm")
 
 # DeepSeek API конфигурация
-DEEPSEEK_API_URL = "https://api.deepseek.com/v1"
+DEEPSEEK_API_URL = "https://api.deepseek.com"
 MAX_BATCH_SIZE = 10  # Для соблюдения лимитов API
 
 def extract_google_play_id(url: str) -> str:
