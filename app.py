@@ -7,15 +7,23 @@ import matplotlib.pyplot as plt
 from google_play_scraper import reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import Counter, defaultdict
-from transformers import pipeline
 
-# Инициализация NLP моделей
-nlp = spacy.load("ru_core_news_sm")
-sentiment_analyzer = pipeline(
-    "text-classification", 
-    model="cointegrated/rubert-tiny-sentiment-balanced",
-    framework="pt"
-)
+# Инициализация NLP только для русского языка
+try:
+    nlp = spacy.load("ru_core_news_sm")
+except:
+    spacy.cli.download("ru_core_news_sm")
+    nlp = spacy.load("ru_core_news_sm")
+
+# Модифицированная инициализация модели с кешированием
+@st.cache_resource
+def load_sentiment_model():
+    from transformers import pipeline
+    return pipeline(
+        "text-classification", 
+        model="cointegrated/rubert-tiny-sentiment-balanced",
+        framework="pt"
+    )
 
 def extract_google_play_id(url: str) -> str:
     match = re.search(r'id=([a-zA-Z0-9._-]+)', url)
@@ -25,7 +33,7 @@ def extract_app_store_id(url: str) -> str:
     match = re.search(r'/id(\d+)', url)
     return match.group(1) if match else None
 
-def get_google_play_reviews(app_url: str, lang: str = 'ru', country: str = 'ru', count: int = 100) -> List[tuple]:
+def get_google_play_reviews(app_url: str, lang: str = 'ru', country: str = 'ru', count: int = 100) -> list:
     app_id = extract_google_play_id(app_url)
     if not app_id:
         st.warning("Неверный URL Google Play")
@@ -44,7 +52,7 @@ def get_google_play_reviews(app_url: str, lang: str = 'ru', country: str = 'ru',
         st.error(f"Ошибка Google Play: {str(e)}")
         return []
 
-def get_app_store_reviews(app_url: str, country: str = 'ru', count: int = 100) -> List[tuple]:
+def get_app_store_reviews(app_url: str, country: str = 'ru', count: int = 100) -> list:
     app_id = extract_app_store_id(app_url)
     if not app_id:
         st.warning("Неверный URL App Store")
@@ -62,14 +70,15 @@ def get_app_store_reviews(app_url: str, country: str = 'ru', count: int = 100) -
         st.error(f"Ошибка App Store: {str(e)}")
         return []
 
-def filter_reviews_by_date(reviews: List[tuple], start_date: datetime.datetime, end_date: datetime.datetime) -> List[tuple]:
+def filter_reviews_by_date(reviews: list, start_date: datetime.datetime, end_date: datetime.datetime) -> list:
     return [r for r in reviews if start_date <= r[0] <= end_date]
 
-def analyze_sentiments(reviews: List[tuple]) -> List[dict]:
+def analyze_sentiments(reviews: list) -> list:
+    sentiment_analyzer = load_sentiment_model()
     sentiments = []
     for _, text, _ in reviews:
         try:
-            result = sentiment_analyzer(text, truncation=True, max_length=512)[0]
+            result = sentiment_analyzer(text[:512], truncation=True)[0]  # Ограничение длины текста
             sentiments.append({
                 'label': result['label'],
                 'score': result['score']
@@ -79,11 +88,11 @@ def analyze_sentiments(reviews: List[tuple]) -> List[dict]:
             sentiments.append({'label': 'NEUTRAL', 'score': 0.5})
     return sentiments
 
-def extract_key_phrases(text: str) -> List[str]:
+def extract_key_phrases(text: str) -> list:
     doc = nlp(text)
     return [chunk.text for chunk in doc.noun_chunks if len(chunk.text.split()) > 1]
 
-def analyze_reviews(reviews: List[tuple]) -> dict:
+def analyze_reviews(reviews: list) -> dict:
     analysis = {
         'sentiments': [],
         'key_phrases': Counter(),
@@ -94,17 +103,9 @@ def analyze_reviews(reviews: List[tuple]) -> dict:
     sentiments = analyze_sentiments(reviews)
     
     for idx, (date, text, platform) in enumerate(reviews):
-        # Анализ тональности
-        sentiment = sentiments[idx]
-        analysis['sentiments'].append({
-            'sentiment': sentiment['label'],
-            'score': sentiment['score']
-        })
-        
-        # Подсчет платформ
+        analysis['sentiments'].append(sentiments[idx])
         analysis['platform_counts'][platform] += 1
         
-        # Извлечение ключевых фраз
         phrases = extract_key_phrases(text)
         for phrase in phrases:
             analysis['key_phrases'][phrase] += 1
@@ -116,22 +117,19 @@ def analyze_reviews(reviews: List[tuple]) -> dict:
 def display_analysis(analysis: dict, total_reviews: int):
     st.header("📊 Результаты анализа")
     
-    # Основные метрики
     cols = st.columns(3)
     cols[0].metric("Всего отзывов", total_reviews)
     cols[1].metric("Google Play", analysis['platform_counts']['Google Play'])
     cols[2].metric("App Store", analysis['platform_counts']['App Store'])
     
-    # Визуализация тональности
     st.subheader("📈 Распределение тональности")
     sentiment_df = pd.DataFrame([
-        {'Тональность': 'Позитивные', 'Количество': sum(1 for s in analysis['sentiments'] if s['sentiment'] == 'POSITIVE')},
-        {'Тональность': 'Нейтральные', 'Количество': sum(1 for s in analysis['sentiments'] if s['sentiment'] == 'NEUTRAL')},
-        {'Тональность': 'Негативные', 'Количество': sum(1 for s in analysis['sentiments'] if s['sentiment'] == 'NEGATIVE')}
+        {'Тональность': 'Позитивные', 'Количество': sum(1 for s in analysis['sentiments'] if s['label'] == 'POSITIVE')},
+        {'Тональность': 'Нейтральные', 'Количество': sum(1 for s in analysis['sentiments'] if s['label'] == 'NEUTRAL')},
+        {'Тональность': 'Негативные', 'Количество': sum(1 for s in analysis['sentiments'] if s['label'] == 'NEGATIVE')}
     ])
     st.bar_chart(sentiment_df.set_index('Тональность'))
     
-    # Ключевые фразы
     st.subheader("🔑 Ключевые упоминания")
     if analysis['key_phrases']:
         phrases_df = pd.DataFrame(
@@ -149,7 +147,6 @@ def main():
     st.set_page_config(page_title="Анализатор отзывов", layout="wide")
     st.title("📱 Анализатор отзывов приложений")
     
-    # Ввод данных
     col1, col2 = st.columns(2)
     with col1:
         gp_url = st.text_input("Ссылка Google Play", placeholder="https://play.google.com/store/apps/details?id=...")
@@ -169,12 +166,10 @@ def main():
                 st.error("Отзывы не найдены!")
                 return
                 
-            # Фильтрация по дате
             start_dt = datetime.datetime.combine(start_date, datetime.time.min)
             end_dt = datetime.datetime.combine(end_date, datetime.time.max)
             filtered_reviews = filter_reviews_by_date(all_reviews, start_dt, end_dt)
             
-            # Корректный подсчет по платформам после фильтрации
             platform_counts = {
                 'Google Play': sum(1 for r in filtered_reviews if r[2] == 'Google Play'),
                 'App Store': sum(1 for r in filtered_reviews if r[2] == 'App Store')
@@ -182,7 +177,7 @@ def main():
             
         with st.spinner("Анализ текста..."):
             analysis = analyze_reviews(filtered_reviews)
-            analysis['platform_counts'] = platform_counts  # Обновляем счетчики
+            analysis['platform_counts'] = platform_counts
             
         display_analysis(analysis, len(filtered_reviews))
 
