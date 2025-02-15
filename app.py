@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from google_play_scraper import reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import Counter, defaultdict
-from transformer import pipeline
+from transformers import pipeline
 
 # Инициализация NLP только для русского языка
 def load_nlp_model():
