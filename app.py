@@ -7,26 +7,27 @@ import matplotlib.pyplot as plt
 from google_play_scraper import reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import Counter, defaultdict
-from transformers import pipeline
 
-# Инициализация NLP только для русского языка
+# Инициализация NLP модели
 def load_nlp_model():
     try:
         return spacy.load("ru_core_news_sm")
-    except OSError:
+    except:
         spacy.cli.download("ru_core_news_sm")
         return spacy.load("ru_core_news_sm")
 
-# Модифицированная инициализация модели с кешированием
-@st.cache_resource
+nlp = load_nlp_model()  # Глобальная инициализация
+
+@st.cache_resource(show_spinner="Загрузка модели анализа тональности...")
 def load_sentiment_model():
     from transformers import pipeline
     return pipeline(
         "text-classification", 
         model="cointegrated/rubert-tiny-sentiment-balanced",
-        framework="pt"
+        framework="pt",
+        device=-1
     )
-
+    
 def extract_google_play_id(url: str) -> str:
     match = re.search(r'id=([a-zA-Z0-9._-]+)', url)
     return match.group(1) if match else None
