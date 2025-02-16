@@ -72,7 +72,7 @@ def get_app_store_reviews(app_url: str, country: str = 'ru', count: int = 100) -
         def get_app_store_rating(app_id):
             try:
                 url = f"https://apps.apple.com/ru/app/id{app_id}"
-                response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+                response = requests.get(url, headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'})
                 soup = BeautifulSoup(response.text, 'html.parser')
                 rating_tag = soup.find('span', class_='we-customer-ratings__averages__display')
                 return float(rating_tag.text.strip()) if rating_tag else 0.0
