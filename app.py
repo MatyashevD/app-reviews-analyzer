@@ -35,12 +35,16 @@ def extract_app_store_id(url: str) -> str:
     match = re.search(r'/id(\d+)', url)
     return match.group(1) if match else None
 
-def get_google_play_reviews(app_url: str, lang: str = 'ru', country: str = 'ru', count: int = 100) -> list:
+def get_google_play_reviews(app_url: str, lang: str = 'ru', country: str = 'ru', count: int = 100) -> tuple:
     app_id = extract_google_play_id(app_url)
     if not app_id:
-        return []
+        return [], 0.0
     
     try:
+        from google_play_scraper import app
+        app_info = app(app_id, lang=lang, country=country)
+        rating = app_info.get('score', 0.0)
+        
         result, _ = gp_reviews(
             app_id,
             lang=lang,
@@ -48,14 +52,14 @@ def get_google_play_reviews(app_url: str, lang: str = 'ru', country: str = 'ru',
             count=count,
             sort=Sort.NEWEST
         )
-        return [(r['at'], r['content'], 'Google Play') for r in result]
+        return [(r['at'], r['content'], 'Google Play') for r in result], rating
     except:
-        return []
+        return [], 0.0
 
-def get_app_store_reviews(app_url: str, country: str = 'ru', count: int = 100) -> list:
+def get_app_store_reviews(app_url: str, country: str = 'ru', count: int = 100) -> tuple:
     app_id = extract_app_store_id(app_url)
     if not app_id:
-        return []
+        return [], 0.0
     
     try:
         app_name_match = re.search(r'/app/([^/]+)/', app_url)
@@ -64,9 +68,10 @@ def get_app_store_reviews(app_url: str, country: str = 'ru', count: int = 100) -
         app = AppStore(country=country, app_id=app_id, app_name=app_name)
         app.review(how_many=count)
         
-        return [(r['date'], r['review'], 'App Store') for r in app.reviews]
+        rating = app.rating if hasattr(app, 'rating') else 0.0
+        return [(r['date'], r['review'], 'App Store') for r in app.reviews], rating
     except:
-        return []
+        return [], 0.0
 
 def filter_reviews_by_date(reviews: list, start_date: datetime.datetime, end_date: datetime.datetime) -> list:
     return [r for r in reviews if start_date <= r[0] <= end_date]
@@ -129,8 +134,16 @@ def display_analysis(analysis: dict, filtered_reviews: list):
     with tab1:
         cols = st.columns(3)
         cols[0].metric("Всего отзывов", len(filtered_reviews))
-        cols[1].metric("Google Play", analysis['platform_counts']['Google Play'])
-        cols[2].metric("App Store", analysis['platform_counts']['App Store'])
+        cols[1].metric(
+            "Google Play", 
+            f"{analysis['platform_counts']['Google Play']['count']} отзывов",
+            f"★ {analysis['platform_counts']['Google Play']['rating']:.1f}"
+        )
+        cols[2].metric(
+            "App Store", 
+            f"{analysis['platform_counts']['App Store']['count']} отзывов",
+            f"★ {analysis['platform_counts']['App Store']['rating']:.1f}"
+        )
         
         st.subheader("📈 Распределение тональности")
         
@@ -225,8 +238,8 @@ def main():
     
     if st.button("🚀 Начать анализ", type="primary"):
         with st.spinner("Сбор отзывов..."):
-            gp_revs = get_google_play_reviews(gp_url)
-            ios_revs = get_app_store_reviews(ios_url)
+            gp_revs, gp_rating = get_google_play_reviews(gp_url)
+            ios_revs, ios_rating = get_app_store_reviews(ios_url)
             all_reviews = gp_revs + ios_revs
             
             if not all_reviews:
@@ -238,8 +251,14 @@ def main():
             filtered_reviews = filter_reviews_by_date(all_reviews, start_dt, end_dt)
             
             platform_counts = {
-                'Google Play': sum(1 for r in filtered_reviews if r[2] == 'Google Play'),
-                'App Store': sum(1 for r in filtered_reviews if r[2] == 'App Store')
+                'Google Play': {
+                    'count': sum(1 for r in filtered_reviews if r[2] == 'Google Play'),
+                    'rating': gp_rating
+                },
+                'App Store': {
+                    'count': sum(1 for r in filtered_reviews if r[2] == 'App Store'),
+                    'rating': ios_rating
+                }
             }
             
         with st.spinner("Анализ текста..."):
