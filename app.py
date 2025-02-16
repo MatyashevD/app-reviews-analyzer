@@ -37,6 +37,18 @@ def extract_app_store_id(url: str) -> str:
     match = re.search(r'/id(\d+)', url)
     return match.group(1) if match else None
 
+def get_app_store_rating(app_id: str) -> float:
+    try:
+        url = f"https://itunes.apple.com/ru/lookup?id={app_id}"
+        response = requests.get(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+        })
+        data = response.json()
+        return float(data['results'][0]['averageUserRating']) if data.get('results') else 0.0
+    except Exception as e:
+        st.error(f"Ошибка получения рейтинга App Store: {str(e)}")
+        return 0.0
+
 def get_google_play_reviews(app_url: str, lang: str = 'ru', country: str = 'ru', count: int = 100) -> tuple:
     app_id = extract_google_play_id(app_url)
     if not app_id:
@@ -54,7 +66,7 @@ def get_google_play_reviews(app_url: str, lang: str = 'ru', country: str = 'ru',
             count=count,
             sort=Sort.NEWEST
         )
-        return [(r['at'], r['content'], 'Google Play') for r in result], rating
+        return [(r['at'], r['content'], 'Google Play', r['score']) for r in result], rating
     except:
         return [], 0.0
 
@@ -72,33 +84,7 @@ def get_app_store_reviews(app_url: str, country: str = 'ru', count: int = 100) -
         app = AppStore(country=country, app_id=app_id, app_name=app_name)
         app.review(how_many=count)
         
-        return [(r['date'], r['review'], 'App Store') for r in app.reviews], rating
-    except Exception as e:
-        st.error(f"Ошибка App Store: {str(e)}")
-        return [], 0.0
-
-        # Получаем рейтинг через парсинг страницы
-def get_app_store_rating(app_id: str) -> float:
-    try:
-        url = f"https://itunes.apple.com/ru/lookup?id={app_id}"
-        response = requests.get(url, headers={
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
-        })
-        data = response.json()
-        return float(data['results'][0]['averageUserRating']) if data.get('results') else 0.0
-    except Exception as e:
-        st.error(f"Ошибка получения рейтинга App Store: {str(e)}")
-        return 0.0
-
-        rating = get_app_store_rating(app_id)
-        
-        app_name_match = re.search(r'/app/([^/]+)/', app_url)
-        app_name = app_name_match.group(1) if app_name_match else "unknown_app"
-        
-        app = AppStore(country=country, app_id=app_id, app_name=app_name)
-        app.review(how_many=count)
-        
-        return [(r['date'], r['review'], 'App Store') for r in app.reviews], rating
+        return [(r['date'], r['review'], 'App Store', r['rating']) for r in app.reviews], rating
     except Exception as e:
         st.error(f"Ошибка App Store: {str(e)}")
         return [], 0.0
@@ -109,7 +95,7 @@ def filter_reviews_by_date(reviews: list, start_date: datetime.datetime, end_dat
 def analyze_sentiments(reviews: list) -> list:
     try:
         sentiment_analyzer = load_sentiment_model()
-        return [sentiment_analyzer(text[:512], truncation=True)[0] for _, text, _ in reviews]
+        return [sentiment_analyzer(text[:512], truncation=True)[0] for _, text, _, _ in reviews]
     except:
         return [{'label': 'neutral', 'score': 0.5} for _ in reviews]
 
@@ -144,14 +130,14 @@ def analyze_reviews(reviews: list) -> dict:
     
     sentiments = analyze_sentiments(reviews)
     
-    for idx, (date, text, platform) in enumerate(reviews):
+    for idx, (date, text, platform, rating) in enumerate(reviews):
         analysis['sentiments'].append(sentiments[idx])
         analysis['platform_counts'][platform] += 1
         
         phrases = extract_key_phrases(text)
         for phrase in phrases:
             analysis['key_phrases'][phrase] += 1
-            if len(analysis['examples'][phrase]) < 10:
+            if len(analysis['examples'][phrase]) < 3:
                 analysis['examples'][phrase].append(text)
     
     return analysis
@@ -166,17 +152,16 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         cols[0].metric("Всего отзывов", len(filtered_reviews))
         cols[1].metric(
             "Google Play", 
-            f"{analysis['platform_counts']['Google Play']['count']} отзывов",
-            f"★ {analysis['platform_counts']['Google Play']['rating']:.1f}"
+            f"{analysis['platform_counts']['Google Play']} отзывов",
+            f"★ {analysis['gp_rating']:.1f}" if analysis['gp_rating'] > 0 else ""
         )
         cols[2].metric(
             "App Store", 
-            f"{analysis['platform_counts']['App Store']['count']} отзывов",
-            f"★ {analysis['platform_counts']['App Store']['rating']:.1f}")
+            f"{analysis['platform_counts']['App Store']} отзывов",
+            f"★ {analysis['ios_rating']:.1f}" if analysis['ios_rating'] > 0 else ""
+        )
         
         st.subheader("📈 Распределение тональности")
-        
-        # Перевод и подсчет меток
         sentiment_translation = {
             'positive': 'Позитивные',
             'neutral': 'Нейтральные',
@@ -190,24 +175,8 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         }
 
         if sum(sentiment_counts.values()) > 0:
-            # Визуализация
             sentiment_df = pd.DataFrame.from_dict(sentiment_counts, orient='index', columns=['Количество'])
             st.bar_chart(sentiment_df)
-            
-            # Расчет средних оценок
-            pos_scores = [s['score'] for s in analysis['sentiments'] if s['label'].lower() == 'positive']
-            neg_scores = [s['score'] for s in analysis['sentiments'] if s['label'].lower() == 'negative']
-            
-            avg_scores = {
-                'Позитивные': round(sum(pos_scores)/len(pos_scores), 3) if pos_scores else 0,
-                'Негативные': round(sum(neg_scores)/len(neg_scores), 3) if neg_scores else 0
-            }
-            
-            # Отображение метрик
-            st.write("**Точность анализа:**")
-            cols = st.columns(2)
-            cols[0].metric("Средняя уверенность в позитивных", f"{avg_scores['Позитивные']:.2f}")
-            cols[1].metric("Средняя уверенность в негативных", f"{avg_scores['Негативные']:.2f}")
         else:
             st.warning("Нет данных для отображения тональности")
         
@@ -226,7 +195,6 @@ def display_analysis(analysis: dict, filtered_reviews: list):
     
     with tab2:
         st.subheader("📋 Все отзывы")
-        # Создаем DataFrame с переведенными метками
         sentiment_translation = {
             'positive': 'Позитивный',
             'neutral': 'Нейтральный',
@@ -236,20 +204,29 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         reviews_df = pd.DataFrame([{
             'Дата': r[0].strftime('%Y-%m-%d'),
             'Платформа': r[2],
+            'Оценка': '★' * int(r[3]),
+            'Оценка (число)': r[3],
             'Отзыв': r[1],
             'Тональность': sentiment_translation.get(s['label'].lower(), 'Нейтральный')
         } for i, (r, s) in enumerate(zip(filtered_reviews, analysis['sentiments']))])
         
-        st.dataframe(reviews_df, height=500, use_container_width=True)
+        st.dataframe(
+            reviews_df[['Дата', 'Платформа', 'Оценка', 'Тональность', 'Отзыв']],
+            height=500,
+            column_config={
+                "Оценка": st.column_config.TextColumn(
+                    help="Пользовательская оценка от 1 до 5 звезд"
+                )
+            }
+        )
         
-        # Экспорт в CSV
-        csv = reviews_df.to_csv(index=False).encode('utf-8')
+        csv = reviews_df[['Дата', 'Платформа', 'Оценка (число)', 'Тональность', 'Отзыв']].to_csv(index=False).encode('utf-8')
         st.download_button(
             label="📥 Скачать все отзывы",
             data=csv,
             file_name='отзывы.csv',
             mime='text/csv',
-            help="Скачать все отзывы в формате CSV"
+            help="Скачать все отзывы в формате CSV с числовыми оценками"
         )
 
 def main():
@@ -280,19 +257,17 @@ def main():
             filtered_reviews = filter_reviews_by_date(all_reviews, start_dt, end_dt)
             
             platform_counts = {
-                'Google Play': {
-                    'count': sum(1 for r in filtered_reviews if r[2] == 'Google Play'),
-                    'rating': gp_rating
-                },
-                'App Store': {
-                    'count': sum(1 for r in filtered_reviews if r[2] == 'App Store'),
-                    'rating': ios_rating
-                }
+                'Google Play': sum(1 for r in filtered_reviews if r[2] == 'Google Play'),
+                'App Store': sum(1 for r in filtered_reviews if r[2] == 'App Store')
             }
             
         with st.spinner("Анализ текста..."):
             analysis = analyze_reviews(filtered_reviews)
-            analysis['platform_counts'] = platform_counts
+            analysis.update({
+                'gp_rating': gp_rating,
+                'ios_rating': ios_rating,
+                'platform_counts': platform_counts
+            })
             
         display_analysis(analysis, filtered_reviews)
 
