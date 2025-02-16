@@ -64,20 +64,31 @@ def get_app_store_reviews(app_url: str, country: str = 'ru', count: int = 100) -
         return [], 0.0
     
     try:
-        from app_store_scraper import AppStore
-        import requests
-        from bs4 import BeautifulSoup
+        rating = get_app_store_rating(app_id)
+        
+        app_name_match = re.search(r'/app/([^/]+)/', app_url)
+        app_name = app_name_match.group(1) if app_name_match else "unknown_app"
+        
+        app = AppStore(country=country, app_id=app_id, app_name=app_name)
+        app.review(how_many=count)
+        
+        return [(r['date'], r['review'], 'App Store') for r in app.reviews], rating
+    except Exception as e:
+        st.error(f"Ошибка App Store: {str(e)}")
+        return [], 0.0
 
         # Получаем рейтинг через парсинг страницы
-        def get_app_store_rating(app_id):
-            try:
-                url = f"https://apps.apple.com/ru/app/id{app_id}"
-                response = requests.get(url, headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36'})
-                soup = BeautifulSoup(response.text, 'html.parser')
-                rating_tag = soup.find('span', class_='we-customer-ratings__averages__display')
-                return float(rating_tag.text.strip()) if rating_tag else 0.0
-            except:
-                return 0.0
+        def get_app_store_rating(app_id: str) -> float:
+    try:
+        url = f"https://itunes.apple.com/ru/lookup?id={app_id}"
+        response = requests.get(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+        })
+        data = response.json()
+        return float(data['results'][0]['averageUserRating']) if data.get('results') else 0.0
+    except Exception as e:
+        st.error(f"Ошибка получения рейтинга App Store: {str(e)}")
+        return 0.0
 
         rating = get_app_store_rating(app_id)
         
@@ -159,10 +170,9 @@ def display_analysis(analysis: dict, filtered_reviews: list):
             f"★ {analysis['platform_counts']['Google Play']['rating']:.1f}"
         )
         cols[2].metric(
-        "App Store", 
-        f"{analysis['platform_counts']['App Store']['count']} отзывов",
-        f"★ {analysis['platform_counts']['App Store']['rating']:.1f}" if analysis['platform_counts']['App Store']['rating'] > 0 else "Рейтинг недоступен"
-        )
+            "App Store", 
+            f"{analysis['platform_counts']['App Store']['count']} отзывов",
+            f"★ {analysis['platform_counts']['App Store']['rating']:.1f}"
         
         st.subheader("📈 Распределение тональности")
         
