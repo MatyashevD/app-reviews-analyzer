@@ -172,7 +172,7 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         cols[2].metric(
             "App Store", 
             f"{analysis['platform_counts']['App Store']['count']} отзывов",
-            f"★ {analysis['platform_counts']['App Store']['rating']:.1f}"
+            f"★ {analysis['platform_counts']['App Store']['rating']:.1f}")
         
         st.subheader("📈 Распределение тональности")
         
