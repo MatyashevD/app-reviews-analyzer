@@ -3,11 +3,9 @@ import re
 import spacy
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
 from google_play_scraper import reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import Counter, defaultdict
-from io import StringIO
 from transformers import pipeline
 
 # Инициализация NLP модели
@@ -78,7 +76,7 @@ def analyze_sentiments(reviews: list) -> list:
         sentiment_analyzer = load_sentiment_model()
         return [sentiment_analyzer(text[:512], truncation=True)[0] for _, text, _ in reviews]
     except:
-        return [{'label': 'NEUTRAL', 'score': 0.5} for _ in reviews]
+        return [{'label': 'neutral', 'score': 0.5} for _ in reviews]
 
 def extract_key_phrases(text: str) -> list:
     try:
@@ -136,21 +134,40 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         
         st.subheader("📈 Распределение тональности")
         
-        # Добавляем отладочный вывод
-        st.write("Примеры меток тональности:", analysis['sentiments'][:3])
-        
-        # Исправляем ключи согласно выходу модели
-        sentiment_counts = {
-            'Позитивные': sum(1 for s in analysis['sentiments'] if s['label'].upper() == 'POSITIVE'),
-            'Нейтральные': sum(1 for s in analysis['sentiments'] if s['label'].upper() == 'NEUTRAL'),
-            'Негативные': sum(1 for s in analysis['sentiments'] if s['label'].upper() == 'NEGATIVE')
+        # Перевод и подсчет меток
+        sentiment_translation = {
+            'positive': 'Позитивные',
+            'neutral': 'Нейтральные',
+            'negative': 'Негативные'
         }
         
+        sentiment_counts = {
+            'Позитивные': sum(1 for s in analysis['sentiments'] if s['label'].lower() == 'positive'),
+            'Нейтральные': sum(1 for s in analysis['sentiments'] if s['label'].lower() == 'neutral'),
+            'Негативные': sum(1 for s in analysis['sentiments'] if s['label'].lower() == 'negative')
+        }
+
         if sum(sentiment_counts.values()) > 0:
+            # Визуализация
             sentiment_df = pd.DataFrame.from_dict(sentiment_counts, orient='index', columns=['Количество'])
             st.bar_chart(sentiment_df)
+            
+            # Расчет средних оценок
+            pos_scores = [s['score'] for s in analysis['sentiments'] if s['label'].lower() == 'positive']
+            neg_scores = [s['score'] for s in analysis['sentiments'] if s['label'].lower() == 'negative']
+            
+            avg_scores = {
+                'Позитивные': round(sum(pos_scores)/len(pos_scores), 3) if pos_scores else 0,
+                'Негативные': round(sum(neg_scores)/len(neg_scores), 3) if neg_scores else 0
+            }
+            
+            # Отображение метрик
+            st.write("**Точность анализа:**")
+            cols = st.columns(2)
+            cols[0].metric("Средняя уверенность в позитивных", f"{avg_scores['Позитивные']:.2f}")
+            cols[1].metric("Средняя уверенность в негативных", f"{avg_scores['Негативные']:.2f}")
         else:
-            st.warning(f"Нет данных для отображения. Всего записей: {len(analysis['sentiments'])}")
+            st.warning("Нет данных для отображения тональности")
         
         st.subheader("🔑 Ключевые упоминания")
         if analysis['key_phrases']:
@@ -158,27 +175,39 @@ def display_analysis(analysis: dict, filtered_reviews: list):
                 analysis['key_phrases'].most_common(10),
                 columns=['Фраза', 'Количество']
             )
-            st.dataframe(phrases_df, height=400)
+            st.dataframe(
+                phrases_df.style.background_gradient(subset=['Количество'], cmap='Blues'),
+                height=400
+            )
         else:
             st.info("Ключевые фразы не обнаружены")
     
     with tab2:
         st.subheader("📋 Все отзывы")
+        # Создаем DataFrame с переведенными метками
+        sentiment_translation = {
+            'positive': 'Позитивный',
+            'neutral': 'Нейтральный',
+            'negative': 'Негативный'
+        }
+        
         reviews_df = pd.DataFrame([{
             'Дата': r[0].strftime('%Y-%m-%d'),
             'Платформа': r[2],
             'Отзыв': r[1],
-            'Тональность': analysis['sentiments'][i]['label']
-        } for i, r in enumerate(filtered_reviews)])
+            'Тональность': sentiment_translation.get(s['label'].lower(), 'Нейтральный')
+        } for i, (r, s) in enumerate(zip(filtered_reviews, analysis['sentiments']))])
         
-        st.dataframe(reviews_df, height=500)
+        st.dataframe(reviews_df, height=500, use_container_width=True)
         
+        # Экспорт в CSV
         csv = reviews_df.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="Скачать CSV",
+            label="📥 Скачать все отзывы",
             data=csv,
-            file_name='reviews.csv',
-            mime='text/csv'
+            file_name='отзывы.csv',
+            mime='text/csv',
+            help="Скачать все отзывы в формате CSV"
         )
 
 def main():
@@ -187,14 +216,14 @@ def main():
     
     col1, col2 = st.columns(2)
     with col1:
-        gp_url = st.text_input("Google Play URL", placeholder="https://play.google.com/store/apps/details?id=...")
+        gp_url = st.text_input("Ссылка Google Play", placeholder="https://play.google.com/store/apps/details?id=...")
     with col2:
-        ios_url = st.text_input("App Store URL", placeholder="https://apps.apple.com/ru/app/...")
+        ios_url = st.text_input("Ссылка App Store", placeholder="https://apps.apple.com/ru/app/...")
     
     start_date = st.date_input("Начальная дата", datetime.date(2024, 1, 1))
     end_date = st.date_input("Конечная дата", datetime.date.today())
     
-    if st.button("🚀 Начать анализ"):
+    if st.button("🚀 Начать анализ", type="primary"):
         with st.spinner("Сбор отзывов..."):
             gp_revs = get_google_play_reviews(gp_url)
             ios_revs = get_app_store_reviews(ios_url)
