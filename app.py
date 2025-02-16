@@ -106,18 +106,33 @@ def extract_key_phrases(text: str) -> list:
         current_phrase = []
         
         for token in doc:
-            if token.pos_ in ['NOUN', 'PROPN', 'ADJ']:
+            # Собираем последовательности из существительных, прилагательных и глаголов
+            if token.pos_ in ['NOUN', 'PROPN', 'ADJ', 'VERB']:
                 current_phrase.append(token.text)
-            else:
-                if len(current_phrase) > 1:
+                # Ограничиваем длину фразы до 4 слов
+                if len(current_phrase) == 4:
                     phrases.append(' '.join(current_phrase))
-                current_phrase = []
+                    current_phrase = []
+            else:
+                if current_phrase:
+                    phrases.append(' '.join(current_phrase))
+                    current_phrase = []
         
-        if len(current_phrase) > 1:
+        # Добавляем последнюю фразу
+        if current_phrase:
             phrases.append(' '.join(current_phrase))
-            
-        return phrases
-    except:
+        
+        # Фильтрация результатов
+        filtered_phrases = [
+            phrase for phrase in phrases 
+            if 2 <= len(phrase.split()) <= 4
+            and not any(c in phrase for c in ['@', '#', 'http'])
+        ]
+        
+        return list(set(filtered_phrases))  # Удаляем дубликаты
+    
+    except Exception as e:
+        st.error(f"Ошибка обработки текста: {str(e)}")
         return []
 
 def analyze_reviews(reviews: list) -> dict:
@@ -125,7 +140,9 @@ def analyze_reviews(reviews: list) -> dict:
         'sentiments': [],
         'key_phrases': Counter(),
         'platform_counts': Counter(),
-        'examples': defaultdict(list)
+        'examples': defaultdict(list),
+        'gp_rating': 0.0,
+        'ios_rating': 0.0
     }
     
     sentiments = analyze_sentiments(reviews)
@@ -138,7 +155,7 @@ def analyze_reviews(reviews: list) -> dict:
         for phrase in phrases:
             analysis['key_phrases'][phrase] += 1
             if len(analysis['examples'][phrase]) < 3:
-                analysis['examples'][phrase].append(text)
+                analysis['examples'][phrase].append(text[:150] + '...')
     
     return analysis
 
@@ -162,12 +179,6 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         )
         
         st.subheader("📈 Распределение тональности")
-        sentiment_translation = {
-            'positive': 'Позитивные',
-            'neutral': 'Нейтральные',
-            'negative': 'Негативные'
-        }
-        
         sentiment_counts = {
             'Позитивные': sum(1 for s in analysis['sentiments'] if s['label'].lower() == 'positive'),
             'Нейтральные': sum(1 for s in analysis['sentiments'] if s['label'].lower() == 'neutral'),
@@ -180,18 +191,55 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         else:
             st.warning("Нет данных для отображения тональности")
         
-        st.subheader("🔑 Ключевые упоминания")
+        st.subheader("🔑 Ключевые темы (Топ-15)")
         if analysis['key_phrases']:
-            phrases_df = pd.DataFrame(
-                analysis['key_phrases'].most_common(10),
-                columns=['Фраза', 'Количество']
-            )
-            st.dataframe(
-                phrases_df.style.background_gradient(subset=['Количество'], cmap='Blues'),
-                height=400
-            )
+            top_phrases = analysis['key_phrases'].most_common(15)
+            
+            # Стилизованное отображение
+            st.markdown("""
+            <style>
+                .phrase-box {
+                    border: 1px solid #e6e6e6;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin: 10px 0;
+                    background: #f9f9f9;
+                }
+                .phrase-text {
+                    font-weight: 600;
+                    color: #2c3e50;
+                    font-size: 16px;
+                }
+                .phrase-count {
+                    color: #3498db;
+                    font-size: 14px;
+                }
+                .phrase-example {
+                    color: #7f8c8d;
+                    font-size: 14px;
+                    margin-top: 8px;
+                }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            for phrase, count in top_phrases:
+                examples = analysis['examples'].get(phrase, [])[:2]
+                examples_html = "<br>".join([f"• {ex}" for ex in examples])
+                
+                st.markdown(f"""
+                <div class="phrase-box">
+                    <div class="phrase-text">
+                        {phrase} 
+                        <span class="phrase-count">({count} упоминаний)</span>
+                    </div>
+                    <div class="phrase-example">
+                        Примеры:<br>
+                        {examples_html if examples else "Нет примеров"}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
         else:
-            st.info("Ключевые фразы не обнаружены")
+            st.info("Ключевые темы не обнаружены")
     
     with tab2:
         st.subheader("📋 Все отзывы")
@@ -205,32 +253,46 @@ def display_analysis(analysis: dict, filtered_reviews: list):
             'Дата': r[0].strftime('%Y-%m-%d'),
             'Платформа': r[2],
             'Оценка': '★' * int(r[3]),
-            'Оценка (число)': r[3],
+            'Оценка (баллы)': r[3],
             'Отзыв': r[1],
             'Тональность': sentiment_translation.get(s['label'].lower(), 'Нейтральный')
         } for i, (r, s) in enumerate(zip(filtered_reviews, analysis['sentiments']))])
         
         st.dataframe(
             reviews_df[['Дата', 'Платформа', 'Оценка', 'Тональность', 'Отзыв']],
-            height=500,
+            height=600,
             column_config={
                 "Оценка": st.column_config.TextColumn(
+                    width="small",
                     help="Пользовательская оценка от 1 до 5 звезд"
+                ),
+                "Отзыв": st.column_config.TextColumn(
+                    width="large",
+                    help="Полный текст отзыва"
                 )
             }
         )
         
-        csv = reviews_df[['Дата', 'Платформа', 'Оценка (число)', 'Тональность', 'Отзыв']].to_csv(index=False).encode('utf-8')
+        # Экспорт данных
+        csv = reviews_df[['Дата', 'Платформа', 'Оценка (баллы)', 'Тональность', 'Отзыв']]
+        csv = csv.to_csv(index=False).encode('utf-8')
+        
         st.download_button(
             label="📥 Скачать все отзывы",
             data=csv,
             file_name='отзывы.csv',
             mime='text/csv',
-            help="Скачать все отзывы в формате CSV с числовыми оценками"
+            help="Скачать данные в формате CSV с числовыми оценками"
         )
 
 def main():
-    st.set_page_config(page_title="Анализатор отзывов", layout="wide")
+    st.set_page_config(
+        page_title="Анализатор отзывов", 
+        layout="wide",
+        menu_items={
+            'About': "### Анализатор отзывов v3.0\nАнализ отзывов из Google Play и App Store"
+        }
+    )
     st.title("📱 Анализатор отзывов приложений")
     
     col1, col2 = st.columns(2)
@@ -256,20 +318,18 @@ def main():
             end_dt = datetime.datetime.combine(end_date, datetime.time.max)
             filtered_reviews = filter_reviews_by_date(all_reviews, start_dt, end_dt)
             
-            platform_counts = {
-                'Google Play': sum(1 for r in filtered_reviews if r[2] == 'Google Play'),
-                'App Store': sum(1 for r in filtered_reviews if r[2] == 'App Store')
-            }
+            with st.spinner("Анализ текста..."):
+                analysis = analyze_reviews(filtered_reviews)
+                analysis.update({
+                    'gp_rating': gp_rating,
+                    'ios_rating': ios_rating,
+                    'platform_counts': {
+                        'Google Play': sum(1 for r in filtered_reviews if r[2] == 'Google Play'),
+                        'App Store': sum(1 for r in filtered_reviews if r[2] == 'App Store')
+                    }
+                })
             
-        with st.spinner("Анализ текста..."):
-            analysis = analyze_reviews(filtered_reviews)
-            analysis.update({
-                'gp_rating': gp_rating,
-                'ios_rating': ios_rating,
-                'platform_counts': platform_counts
-            })
-            
-        display_analysis(analysis, filtered_reviews)
+            display_analysis(analysis, filtered_reviews)
 
 if __name__ == "__main__":
     main()
