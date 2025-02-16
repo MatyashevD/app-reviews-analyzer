@@ -3,6 +3,8 @@ import re
 import spacy
 import pandas as pd
 import streamlit as st
+import requests
+from bs4 import BeautifulSoup
 from google_play_scraper import reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import Counter, defaultdict
@@ -62,15 +64,32 @@ def get_app_store_reviews(app_url: str, country: str = 'ru', count: int = 100) -
         return [], 0.0
     
     try:
+        from app_store_scraper import AppStore
+        import requests
+        from bs4 import BeautifulSoup
+
+        # Получаем рейтинг через парсинг страницы
+        def get_app_store_rating(app_id):
+            try:
+                url = f"https://apps.apple.com/ru/app/id{app_id}"
+                response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+                soup = BeautifulSoup(response.text, 'html.parser')
+                rating_tag = soup.find('span', class_='we-customer-ratings__averages__display')
+                return float(rating_tag.text.strip()) if rating_tag else 0.0
+            except:
+                return 0.0
+
+        rating = get_app_store_rating(app_id)
+        
         app_name_match = re.search(r'/app/([^/]+)/', app_url)
         app_name = app_name_match.group(1) if app_name_match else "unknown_app"
         
         app = AppStore(country=country, app_id=app_id, app_name=app_name)
         app.review(how_many=count)
         
-        rating = app.rating if hasattr(app, 'rating') else 0.0
         return [(r['date'], r['review'], 'App Store') for r in app.reviews], rating
-    except:
+    except Exception as e:
+        st.error(f"Ошибка App Store: {str(e)}")
         return [], 0.0
 
 def filter_reviews_by_date(reviews: list, start_date: datetime.datetime, end_date: datetime.datetime) -> list:
@@ -140,9 +159,9 @@ def display_analysis(analysis: dict, filtered_reviews: list):
             f"★ {analysis['platform_counts']['Google Play']['rating']:.1f}"
         )
         cols[2].metric(
-            "App Store", 
-            f"{analysis['platform_counts']['App Store']['count']} отзывов",
-            f"★ {analysis['platform_counts']['App Store']['rating']:.1f}"
+        "App Store", 
+        f"{analysis['platform_counts']['App Store']['count']} отзывов",
+        f"★ {analysis['platform_counts']['App Store']['rating']:.1f}" if analysis['platform_counts']['App Store']['rating'] > 0 else "Рейтинг недоступен"
         )
         
         st.subheader("📈 Распределение тональности")
