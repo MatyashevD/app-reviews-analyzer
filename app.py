@@ -79,15 +79,15 @@ def get_app_store_reviews(app_url: str, country: str = 'ru', count: int = 100) -
 
         # Получаем рейтинг через парсинг страницы
         def get_app_store_rating(app_id: str) -> float:
-    try:
-        url = f"https://itunes.apple.com/ru/lookup?id={app_id}"
-        response = requests.get(url, headers={
+        try:
+            url = f"https://itunes.apple.com/ru/lookup?id={app_id}"
+            response = requests.get(url, headers={
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
         })
-        data = response.json()
+            data = response.json()
         return float(data['results'][0]['averageUserRating']) if data.get('results') else 0.0
     except Exception as e:
-        st.error(f"Ошибка получения рейтинга App Store: {str(e)}")
+            st.error(f"Ошибка получения рейтинга App Store: {str(e)}")
         return 0.0
 
         rating = get_app_store_rating(app_id)
