@@ -121,7 +121,7 @@ def analyze_reviews(reviews: list) -> dict:
         phrases = extract_key_phrases(text)
         for phrase in phrases:
             analysis['key_phrases'][phrase] += 1
-            if len(analysis['examples'][phrase]) < 5:
+            if len(analysis['examples'][phrase]) < 10:
                 analysis['examples'][phrase].append(text)
     
     return analysis
