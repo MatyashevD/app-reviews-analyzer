@@ -164,6 +164,10 @@ def display_analysis(analysis: dict, filtered_reviews: list):
     
     tab1, tab2 = st.tabs(["Аналитика", "Все отзывы"])
     
+    # Сохраняем данные в сессии
+    st.session_state.analysis_data = analysis
+    st.session_state.filtered_reviews = filtered_reviews
+    
     with tab1:
         cols = st.columns(3)
         cols[0].metric("Всего отзывов", len(filtered_reviews))
@@ -273,17 +277,20 @@ def display_analysis(analysis: dict, filtered_reviews: list):
             }
         )
         
-        # Экспорт данных
+        # Кнопка скачивания
         csv = reviews_df[['Дата', 'Платформа', 'Оценка (баллы)', 'Тональность', 'Отзыв']]
         csv = csv.to_csv(index=False).encode('utf-8')
         
-        st.download_button(
+        if st.download_button(
             label="📥 Скачать все отзывы",
             data=csv,
             file_name='отзывы.csv',
             mime='text/csv',
-            help="Скачать данные в формате CSV с числовыми оценками"
-        )
+            key='download_csv'
+        ):
+            # Явно сохраняем состояние после скачивания
+            st.session_state.analysis_data = analysis
+            st.session_state.filtered_reviews = filtered_reviews
 
 def main():
     st.set_page_config(
