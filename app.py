@@ -4,7 +4,7 @@ import spacy
 import pandas as pd
 import streamlit as st
 import requests
-from bs4 import BeautifulSoap
+from bs4 import BeautifulSoup
 from google_play_scraper import reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import Counter, defaultdict
