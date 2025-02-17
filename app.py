@@ -4,7 +4,7 @@ import spacy
 import pandas as pd
 import streamlit as st
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoap
 from google_play_scraper import reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import Counter, defaultdict
@@ -106,10 +106,8 @@ def extract_key_phrases(text: str) -> list:
         current_phrase = []
         
         for token in doc:
-            # Собираем последовательности из существительных, прилагательных и глаголов
             if token.pos_ in ['NOUN', 'PROPN', 'ADJ', 'VERB']:
                 current_phrase.append(token.text)
-                # Ограничиваем длину фразы до 4 слов
                 if len(current_phrase) == 4:
                     phrases.append(' '.join(current_phrase))
                     current_phrase = []
@@ -118,18 +116,16 @@ def extract_key_phrases(text: str) -> list:
                     phrases.append(' '.join(current_phrase))
                     current_phrase = []
         
-        # Добавляем последнюю фразу
         if current_phrase:
             phrases.append(' '.join(current_phrase))
         
-        # Фильтрация результатов
         filtered_phrases = [
             phrase for phrase in phrases 
             if 2 <= len(phrase.split()) <= 4
             and not any(c in phrase for c in ['@', '#', 'http'])
         ]
         
-        return list(set(filtered_phrases))  # Удаляем дубликаты
+        return list(set(filtered_phrases))
     
     except Exception as e:
         st.error(f"Ошибка обработки текста: {str(e)}")
@@ -162,11 +158,11 @@ def analyze_reviews(reviews: list) -> dict:
 def display_analysis(analysis: dict, filtered_reviews: list):
     st.header("📊 Результаты анализа")
     
-    tab1, tab2 = st.tabs(["Аналитика", "Все отзывы"])
-    
-    # Сохраняем данные в сессии
+    # Сохраняем состояние
     st.session_state.analysis_data = analysis
     st.session_state.filtered_reviews = filtered_reviews
+    
+    tab1, tab2 = st.tabs(["Аналитика", "Все отзывы"])
     
     with tab1:
         cols = st.columns(3)
@@ -199,7 +195,6 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         if analysis['key_phrases']:
             top_phrases = analysis['key_phrases'].most_common(15)
             
-            # Стилизованное отображение
             st.markdown("""
             <style>
                 .phrase-box {
@@ -266,18 +261,11 @@ def display_analysis(analysis: dict, filtered_reviews: list):
             reviews_df[['Дата', 'Платформа', 'Оценка', 'Тональность', 'Отзыв']],
             height=600,
             column_config={
-                "Оценка": st.column_config.TextColumn(
-                    width="small",
-                    help="Пользовательская оценка от 1 до 5 звезд"
-                ),
-                "Отзыв": st.column_config.TextColumn(
-                    width="large",
-                    help="Полный текст отзыва"
-                )
+                "Оценка": st.column_config.TextColumn(width="small"),
+                "Отзыв": st.column_config.TextColumn(width="large")
             }
         )
         
-        # Кнопка скачивания
         csv = reviews_df[['Дата', 'Платформа', 'Оценка (баллы)', 'Тональность', 'Отзыв']]
         csv = csv.to_csv(index=False).encode('utf-8')
         
@@ -286,32 +274,46 @@ def display_analysis(analysis: dict, filtered_reviews: list):
             data=csv,
             file_name='отзывы.csv',
             mime='text/csv',
-            key='download_csv'
+            key='download_btn'
         ):
-            # Явно сохраняем состояние после скачивания
             st.session_state.analysis_data = analysis
             st.session_state.filtered_reviews = filtered_reviews
+            st.experimental_rerun()
+    
+    if st.button("🔄 Новый анализ", type="secondary"):
+        st.session_state.clear()
+        st.experimental_rerun()
 
 def main():
     st.set_page_config(
         page_title="Анализатор отзывов", 
         layout="wide",
-        menu_items={
-            'About': "### Анализатор отзывов v3.0\nАнализ отзывов из Google Play и App Store"
-        }
+        menu_items={'About': "### Анализатор отзывов v4.0"}
     )
     st.title("📱 Анализатор отзывов приложений")
     
+    # Сохраняем URL в сессии
     col1, col2 = st.columns(2)
     with col1:
-        gp_url = st.text_input("Ссылка Google Play", placeholder="https://play.google.com/store/apps/details?id=...")
+        gp_url = st.text_input(
+            "Ссылка Google Play", 
+            value=st.session_state.get('gp_url', ''),
+            key='gp_url_input'
+        )
     with col2:
-        ios_url = st.text_input("Ссылка App Store", placeholder="https://apps.apple.com/ru/app/...")
+        ios_url = st.text_input(
+            "Ссылка App Store", 
+            value=st.session_state.get('ios_url', ''),
+            key='ios_url_input'
+        )
     
     start_date = st.date_input("Начальная дата", datetime.date(2024, 1, 1))
     end_date = st.date_input("Конечная дата", datetime.date.today())
     
     if st.button("🚀 Начать анализ", type="primary"):
+        st.session_state.gp_url = gp_url
+        st.session_state.ios_url = ios_url
+        
         with st.spinner("Сбор отзывов..."):
             gp_revs, gp_rating = get_google_play_reviews(gp_url)
             ios_revs, ios_rating = get_app_store_reviews(ios_url)
@@ -336,7 +338,12 @@ def main():
                     }
                 })
             
-            display_analysis(analysis, filtered_reviews)
+            st.session_state.analysis_data = analysis
+            st.session_state.filtered_reviews = filtered_reviews
+            st.experimental_rerun()
+    
+    if 'analysis_data' in st.session_state and 'filtered_reviews' in st.session_state:
+        display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
 
 if __name__ == "__main__":
     main()
