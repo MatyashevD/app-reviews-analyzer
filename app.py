@@ -430,26 +430,56 @@ def main():
         display_search_results(st.session_state.search_results)
 
     # Блок анализа
-    if selected_count == 2:
+if selected_count == 2:
     with st.container():
-        cols = st.columns([3, 3, 2, 1])  # Новое соотношение колонок
+        st.markdown("""
+        <style>
+            .date-row {
+                display: flex;
+                align-items: flex-end;
+                gap: 20px;
+                margin-bottom: 1rem;
+            }
+            .date-picker {
+                flex: 1;
+            }
+            .analyze-btn {
+                margin-top: 28px !important;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+
+        st.markdown('<div class="date-row">', unsafe_allow_html=True)
         
-        # Поля дат
-        with cols[0]:
-            start_date = st.date_input("Начальная дата", datetime.date.today() - datetime.timedelta(days=30))
-        with cols[1]:
-            end_date = st.date_input("Конечная дата", datetime.date.today())
+        # Начальная дата
+        with st.container():
+            st.markdown('<div class="date-picker">', unsafe_allow_html=True)
+            start_date = st.date_input(
+                "Начальная дата",
+                datetime.date.today() - datetime.timedelta(days=30),
+                key='start_date'
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
         
-        # Пустая колонка для отступа
-        cols[2].empty()
+        # Конечная дата
+        with st.container():
+            st.markdown('<div class="date-picker">', unsafe_allow_html=True)
+            end_date = st.date_input(
+                "Конечная дата",
+                datetime.date.today(),
+                key='end_date'
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
         
         # Кнопка анализа
-        with cols[3]:
-            st.write("\n")  # Вертикальный отступ
-            if st.button("🚀 Запустить анализ", 
-                       use_container_width=True, 
-                       type="primary",
-                       help="Начать анализ выбранных отзывов"):
+        with st.container():
+            st.markdown('<div class="analyze-btn">', unsafe_allow_html=True)
+            if st.button(
+                "🚀 Запустить анализ",
+                use_container_width=True,
+                type="primary",
+                help="Начать анализ выбранных отзывов"
+            ):
                 with st.spinner("Анализ отзывов..."):
                     all_reviews = []
                     try:
@@ -472,6 +502,9 @@ def main():
                         st.session_state.analysis_data = analyze_reviews(st.session_state.filtered_reviews)
                     except Exception as e:
                         st.error(f"Ошибка анализа: {str(e)}")
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     
     # Отображение результатов анализа
     if 'analysis_data' in st.session_state:
