@@ -119,8 +119,10 @@ def extract_key_phrases(text: str) -> list:
         if current_phrase:
             phrases.append(' '.join(current_phrase))
         
+        # Фильтрация и нормализация фраз
         filtered_phrases = [
-            phrase for phrase in phrases 
+            phrase.strip().lower()
+            for phrase in phrases 
             if 2 <= len(phrase.split()) <= 4
             and not any(c in phrase for c in ['@', '#', 'http'])
         ]
@@ -150,8 +152,37 @@ def analyze_reviews(reviews: list) -> dict:
         phrases = extract_key_phrases(text)
         for phrase in phrases:
             analysis['key_phrases'][phrase] += 1
+            
+            # Ищем точное вхождение фразы в тексте
+            start_idx = text.lower().find(phrase)
+            if start_idx != -1:
+                # Вырезаем контекст вокруг фразы
+                start = max(0, start_idx - 30)
+                end = min(len(text), start_idx + len(phrase) + 30)
+                example = text[start:end].strip()
+                
+                # Форматирование примера
+                if start > 0:
+                    example = "..." + example
+                if end < len(text):
+                    example += "..."
+                    
+                example = example.replace(phrase, f"**{phrase}**")
+            else:
+                example = text[:100] + "..."
+            
             if len(analysis['examples'][phrase]) < 3:
-                analysis['examples'][phrase].append(text[:150] + '...')
+                analysis['examples'][phrase].append(example)
+    
+    # Фильтруем фразы с одинаковыми примерами
+    unique_phrases = []
+    for phrase, count in analysis['key_phrases'].most_common():
+        unique_examples = list({ex for ex in analysis['examples'][phrase]})
+        if len(unique_examples) > 0:
+            analysis['examples'][phrase] = unique_examples
+            unique_phrases.append((phrase, count))
+    
+    analysis['key_phrases'] = Counter(dict(unique_phrases[:15]))
     
     return analysis
 
