@@ -4,6 +4,7 @@ import spacy
 import pandas as pd
 import streamlit as st
 import requests
+import urllib.parse
 from bs4 import BeautifulSoup
 from google_play_scraper import app as gp_app, reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
