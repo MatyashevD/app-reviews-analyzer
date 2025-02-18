@@ -431,8 +431,8 @@ def main():
 
         
         # Блок анализа
-if selected_count == 2:
-    with st.container():
+    if selected_count == 2:
+        with st.container():
         # Сбрасываем возможные стилевые конфликты
         st.markdown("""
         <style>
@@ -508,8 +508,8 @@ if selected_count == 2:
                         st.error(f"Ошибка анализа: {str(e)}")
             st.markdown('</div>', unsafe_allow_html=True)
 
-# Отображение результатов анализа
-if 'analysis_data' in st.session_state:
+     # Отображение результатов анализа
+    if 'analysis_data' in st.session_state:
     display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
 
 
