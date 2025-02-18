@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
-from google_play_scraper import reviews as gp_reviews, Sort
+from google_play_scraper import app as gp_app, reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import Counter, defaultdict
 from transformers import pipeline
@@ -29,13 +29,26 @@ def load_sentiment_model():
         device=-1
     )
 
-def extract_google_play_id(url: str) -> str:
-    match = re.search(r'id=([a-zA-Z0-9._-]+)', url)
-    return match.group(1) if match else None
+def search_google_play(app_name: str) -> str:
+    try:
+        result = gp_app(app_name, lang='ru', country='ru')
+        return result['appId']
+    except Exception as e:
+        st.error(f"Ошибка поиска Google Play: {str(e)}")
+        return None
 
-def extract_app_store_id(url: str) -> str:
-    match = re.search(r'/id(\d+)', url)
-    return match.group(1) if match else None
+def search_app_store(app_name: str) -> str:
+    try:
+        # Используем поиск по названию для получения app_id
+        search_url = f"https://itunes.apple.com/search?term={app_name}&country=ru&entity=software"
+        response = requests.get(search_url)
+        data = response.json()
+        if data['resultCount'] > 0:
+            return data['results'][0]['trackId']
+        return None
+    except Exception as e:
+        st.error(f"Ошибка поиска App Store: {str(e)}")
+        return None
 
 def get_app_store_rating(app_id: str) -> float:
     try:
@@ -49,14 +62,13 @@ def get_app_store_rating(app_id: str) -> float:
         st.error(f"Ошибка получения рейтинга App Store: {str(e)}")
         return 0.0
 
-def get_google_play_reviews(app_url: str, lang: str = 'ru', country: str = 'ru', count: int = 100) -> tuple:
-    app_id = extract_google_play_id(app_url)
+def get_google_play_reviews(app_name: str, lang: str = 'ru', country: str = 'ru', count: int = 100) -> tuple:
+    app_id = search_google_play(app_name)
     if not app_id:
         return [], 0.0
     
     try:
-        from google_play_scraper import app
-        app_info = app(app_id, lang=lang, country=country)
+        app_info = gp_app(app_id, lang=lang, country=country)
         rating = app_info.get('score', 0.0)
         
         result, _ = gp_reviews(
@@ -70,16 +82,13 @@ def get_google_play_reviews(app_url: str, lang: str = 'ru', country: str = 'ru',
     except:
         return [], 0.0
 
-def get_app_store_reviews(app_url: str, country: str = 'ru', count: int = 100) -> tuple:
-    app_id = extract_app_store_id(app_url)
+def get_app_store_reviews(app_name: str, country: str = 'ru', count: int = 100) -> tuple:
+    app_id = search_app_store(app_name)
     if not app_id:
         return [], 0.0
     
     try:
         rating = get_app_store_rating(app_id)
-        
-        app_name_match = re.search(r'/app/([^/]+)/', app_url)
-        app_name = app_name_match.group(1) if app_name_match else "unknown_app"
         
         app = AppStore(country=country, app_id=app_id, app_name=app_name)
         app.review(how_many=count)
@@ -323,31 +332,31 @@ def main():
     )
     st.title("📱 Анализатор отзывов приложений")
     
-    # Сохраняем URL в сессии
+    # Сохраняем название приложения в сессии
     col1, col2 = st.columns(2)
     with col1:
-        gp_url = st.text_input(
-            "Ссылка Google Play", 
-            value=st.session_state.get('gp_url', ''),
-            key='gp_url_input'
+        app_name_gp = st.text_input(
+            "Название приложения Google Play", 
+            value=st.session_state.get('app_name_gp', ''),
+            key='app_name_gp_input'
         )
     with col2:
-        ios_url = st.text_input(
-            "Ссылка App Store", 
-            value=st.session_state.get('ios_url', ''),
-            key='ios_url_input'
+        app_name_ios = st.text_input(
+            "Название приложения App Store", 
+            value=st.session_state.get('app_name_ios', ''),
+            key='app_name_ios_input'
         )
     
     start_date = st.date_input("Начальная дата", datetime.date(2024, 1, 1))
     end_date = st.date_input("Конечная дата", datetime.date.today())
     
     if st.button("🚀 Начать анализ", type="primary"):
-        st.session_state.gp_url = gp_url
-        st.session_state.ios_url = ios_url
+        st.session_state.app_name_gp = app_name_gp
+        st.session_state.app_name_ios = app_name_ios
         
         with st.spinner("Сбор отзывов..."):
-            gp_revs, gp_rating = get_google_play_reviews(gp_url)
-            ios_revs, ios_rating = get_app_store_reviews(ios_url)
+            gp_revs, gp_rating = get_google_play_reviews(app_name_gp)
+            ios_revs, ios_rating = get_app_store_reviews(app_name_ios)
             all_reviews = gp_revs + ios_revs
             
             if not all_reviews:
