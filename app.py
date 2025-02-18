@@ -93,46 +93,32 @@ def search_apps(query: str):
     return results
 
 def display_search_results(results: dict):
-    """Современный UI с мобильными компактными карточками"""
+    """Минималистичные карточки без иконок в мобильном стиле"""
     st.subheader("🔍 Результаты поиска", divider="rainbow")
     
     st.markdown("""
     <style>
         .mobile-card {
             border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 8px;
-            margin: 6px 0;
+            border-radius: 8px;
+            padding: 6px 8px;
+            margin: 4px 0;
             transition: all 0.2s;
             background: white;
             cursor: pointer;
             position: relative;
         }
         .mobile-card:hover {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
         }
         .selected-card {
             border-color: #4CAF50 !important;
             background: #f8fff8;
         }
-        .card-header {
+        .card-row {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 8px;
-        }
-        .app-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            background: #f0f0f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-        }
-        .card-content {
-            flex-grow: 1;
-            min-width: 0;
         }
         .app-title {
             font-size: 13px;
@@ -141,29 +127,27 @@ def display_search_results(results: dict):
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            max-width: 70%;
         }
-        .app-meta {
+        .meta-info {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-top: 4px;
+            gap: 8px;
         }
         .rating-badge {
             font-size: 12px;
-            background: #fff3e0;
+            color: #ff9800;
+            white-space: nowrap;
+        }
+        .platform-tag {
+            font-size: 10px;
             padding: 2px 6px;
             border-radius: 4px;
-            color: #ff9800;
+            background: #f0f0f0;
         }
         .match-percent {
             font-size: 11px;
             color: #666;
-        }
-        .platform-icon {
-            font-size: 14px;
-            position: absolute;
-            top: 8px;
-            right: 8px;
         }
     </style>
     """, unsafe_allow_html=True)
