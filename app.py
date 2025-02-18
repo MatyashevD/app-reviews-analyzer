@@ -30,50 +30,84 @@ def load_sentiment_model():
         device=-1
     )
 
-def search_google_play_via_google(app_name: str) -> str:
-    try:
-        # Формируем URL для поискового запроса в Google
-        search_url = f"https://www.google.com/search?q={app_name}+site:play.google.com"
-        
-        # Отправляем GET-запрос в Google
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'
-        }
-        response = requests.get(search_url, headers=headers)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Ищем ссылку на Google Play в результатах
-        link = None
-        for result in soup.find_all('a', href=True):
-            if 'play.google.com' in result['href']:
-                link = result['href']
-                break
-        
-        if link:
-            # Извлекаем app_id из ссылки
-            app_id_match = re.search(r"id=([a-zA-Z0-9._-]+)", link)
-            if app_id_match:
-                return app_id_match.group(1)
-            else:
-                raise ValueError("Не удалось извлечь ID приложения.")
-        else:
-            raise ValueError("Приложение не найдено в поиске Google.")
-    
-    except Exception as e:
-        return f"Ошибка при поиске в Google: {str(e)}"
+# Настройки API
+GOOGLE_PLAY_COUNTRY = "ru"
+APP_STORE_COUNTRY = "ru"
+MAX_RESULTS = 5
 
-def search_app_store(app_name: str) -> str:
+def search_apps(query: str):
+    """Поиск приложений по названию"""
+    results = {"google_play": [], "app_store": []}
+    
     try:
-        # Используем поиск по названию для получения app_id
-        search_url = f"https://itunes.apple.com/search?term={app_name}&country=ru&entity=software"
-        response = requests.get(search_url)
-        data = response.json()
-        if data['resultCount'] > 0:
-            return data['results'][0]['trackId']
-        return None
+        # Поиск в Google Play
+        gp_results = search(
+            query,
+            lang="ru",
+            country=GOOGLE_PLAY_COUNTRY,
+            n_hits=MAX_RESULTS
+        )
+        results["google_play"] = [{
+            "id": r["appId"],
+            "title": r["title"],
+            "developer": r["developer"],
+            "score": r["score"]
+        } for r in gp_results]
+        
     except Exception as e:
-        st.error(f"Ошибка поиска App Store: {str(e)}")
-        return None
+        st.error(f"Ошибка поиска в Google Play: {str(e)}")
+    
+    try:
+        # Поиск в App Store через iTunes API
+        itunes_response = requests.get(
+            "https://itunes.apple.com/search",
+            params={
+                "term": query,
+                "country": APP_STORE_COUNTRY,
+                "media": "software",
+                "limit": MAX_RESULTS
+            }
+        )
+        ios_data = itunes_response.json()
+        results["app_store"] = [{
+            "id": r["trackId"],
+            "title": r["trackName"],
+            "developer": r["artistName"],
+            "score": r["averageUserRating"]
+        } for r in ios_data.get("results", [])]
+        
+    except Exception as e:
+        st.error(f"Ошибка поиска в App Store: {str(e)}")
+    
+    return results
+
+def display_search_results(results: dict):
+    """Отображение результатов поиска"""
+    st.subheader("🔍 Результаты поиска")
+    
+    if not results["google_play"] and not results["app_store"]:
+        st.warning("Приложения не найдены")
+        return
+    
+    # Google Play
+    if results["google_play"]:
+        st.markdown("### Google Play")
+        for i, app in enumerate(results["google_play"], 1):
+            with st.expander(f"{i}. {app['title']}"):
+                st.write(f"**Разработчик:** {app['developer']}")
+                st.write(f"**Рейтинг:** {app['score']:.1f} ★")
+                if st.button(f"Выбрать", key=f"gp_{app['id']}"):
+                    st.session_state.selected_gp_app = app
+    
+    # App Store
+    if results["app_store"]:
+        st.markdown("### App Store")
+        for i, app in enumerate(results["app_store"], 1):
+            with st.expander(f"{i}. {app['title']}"):
+                st.write(f"**Разработчик:** {app['developer']}")
+                st.write(f"**Рейтинг:** {app['score']:.1f} ★")
+                if st.button(f"Выбрать", key=f"ios_{app['id']}"):
+                    st.session_state.selected_ios_app = app
 
 def get_app_store_rating(app_id: str) -> float:
     try:
@@ -350,38 +384,47 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         st.experimental_rerun()
 
 def main():
-    st.set_page_config(
-        page_title="Анализатор отзывов", 
+     st.set_page_config(
+        page_title="Поиск приложений",
         layout="wide",
-        menu_items={'About': "### Анализатор отзывов v4.0"}
+        menu_items={'About': "### Поиск мобильных приложений v2.0"}
     )
-    st.title("📱 Анализатор отзывов приложений")
+    st.title("📲 Поиск мобильных приложений")
     
-    # Сохраняем название приложения в сессии
-    col1, col2 = st.columns(2)
-    with col1:
-        app_name_gp = st.text_input(
-            "Название приложения Google Play", 
-            value=st.session_state.get('app_name_gp', ''),
-            key='app_name_gp_input'
-        )
-    with col2:
-        app_name_ios = st.text_input(
-            "Название приложения App Store", 
-            value=st.session_state.get('app_name_ios', ''),
-            key='app_name_ios_input'
-        )
+    # Поисковая строка
+    search_query = st.text_input(
+        "Введите название приложения:",
+        placeholder="Например: TikTok, СберБанк",
+        key="search_input"
+    )
     
-    start_date = st.date_input("Начальная дата", datetime.date(2024, 1, 1))
-    end_date = st.date_input("Конечная дата", datetime.date.today())
+    # Инициализация состояния
+    if 'search_results' not in st.session_state:
+        st.session_state.search_results = None
     
-    if st.button("🚀 Начать анализ", type="primary"):
-        st.session_state.app_name_gp = app_name_gp
-        st.session_state.app_name_ios = app_name_ios
-        
-        with st.spinner("Пожалуйста, подождите..."):
-            reviews_gp, rating_gp = get_google_play_reviews(app_name_gp)
-            reviews_ios, rating_ios = get_app_store_reviews(app_name_ios)
+    # Кнопка поиска
+    if st.button("🔎 Найти приложения", type="primary"):
+        if len(search_query) < 3:
+            st.warning("Введите минимум 3 символа для поиска")
+        else:
+            with st.spinner("Ищем приложения..."):
+                st.session_state.search_results = search_apps(search_query)
+    
+    # Отображение результатов
+    if st.session_state.search_results:
+        display_search_results(st.session_state.search_results)
+    
+    # Отображение выбранных приложений
+    if 'selected_gp_app' in st.session_state:
+        st.success(f"✅ Выбрано приложение Google Play: {st.session_state.selected_gp_app['title']}")
+    
+    if 'selected_ios_app' in st.session_state:
+        st.success(f"✅ Выбрано приложение App Store: {st.session_state.selected_ios_app['title']}")
+    
+    # Кнопка анализа при наличии выбранных приложений
+    if 'selected_gp_app' in st.session_state or 'selected_ios_app' in st.session_state:
+        if st.button("🚀 Начать анализ отзывов", type="primary"):
+            get_reviews()
             
             if reviews_gp or reviews_ios:
                 filtered_reviews = reviews_gp + reviews_ios
