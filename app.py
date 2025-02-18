@@ -14,10 +14,10 @@ from itertools import groupby
 from typing import Optional
 from dotenv import load_dotenv
 
-client = OpenAI(api_key=st.secrets["openai_api_key"])
+client = OpenAI(api_key=st.secrets.get("openai_api_key"))
 
 # Проверка наличия ключа
-if "openai_api_key" not in st.secrets:
+if "openai_api_key" not in st.secrets or not client.api_key:
     st.error("❌ API-ключ OpenAI не найден в секретах. Проверьте настройки.")
     st.stop()
 
@@ -71,13 +71,11 @@ def search_apps(query: str):
         for name, group in grouped:
             best_match = max(group, 
                            key=lambda x: fuzz.token_set_ratio(query, x['trackName']))
-            # Добавляем расчет match_score для каждого элемента
             processed.append({
                 **best_match,
                 "match_score": fuzz.token_set_ratio(query, best_match['trackName'])
             })
 
-        # Сортировка по match_score
         processed.sort(key=lambda x: x['match_score'], reverse=True)
         
         results["app_store"] = [{
@@ -87,7 +85,7 @@ def search_apps(query: str):
             "score": r.get("averageUserRating", 0),
             "url": r["trackViewUrl"],
             "platform": 'App Store',
-            "match_score": r['match_score']  # Теперь поле существует
+            "match_score": r['match_score']
         } for r in processed if r.get('averageUserRating', 0) > 0][:MAX_RESULTS]
         
     except Exception as e:
@@ -159,7 +157,6 @@ def display_search_results(results: dict):
 def get_reviews(app_id: str, platform: str, 
                 start_date: Optional[datetime.date] = None, 
                 end_date: Optional[datetime.date] = None):
-    """Получение отзывов с фильтрацией по дате"""
     try:
         if platform == 'google_play':
             result, _ = gp_reviews(
@@ -193,7 +190,6 @@ def get_reviews(app_id: str, platform: str,
 
 
 def analyze_with_ai(reviews_text: str):
-    """Анализ отзывов через OpenAI API"""
     try:
         response = client.chat.completions.create(
             model="gpt-4-1106-preview",
@@ -212,7 +208,9 @@ def analyze_with_ai(reviews_text: str):
             temperature=0.3,
             max_tokens=1500
         )
-        return response.choices[0].message.content
+        if response.choices and response.choices[0].message.content:
+            return response.choices[0].message.content
+        return "⚠️ Анализ не удался: пустой ответ от ИИ"
     except Exception as e:
         st.error(f"AI анализ недоступен: {str(e)}")
         return None
@@ -236,13 +234,11 @@ def analyze_reviews(filtered_reviews: list):
         else: 
             ios_ratings.append(rating)
         
-        # Новый метод извлечения фраз
         doc = nlp(text)
         phrases = []
         current_phrase = []
         
         for token in doc:
-            # Собираем последовательности из существительных/прилагательных
             if token.pos_ in ['NOUN', 'PROPN', 'ADJ'] and not token.is_stop:
                 current_phrase.append(token.text)
             else:
@@ -253,7 +249,6 @@ def analyze_reviews(filtered_reviews: list):
         if current_phrase:
             phrases.append(' '.join(current_phrase))
         
-        # Фильтрация и подсчет
         for phrase in phrases:
             if 2 <= len(phrase.split()) <= 3 and len(phrase) > 4:
                 analysis['key_phrases'][phrase.lower()] += 1
@@ -261,7 +256,7 @@ def analyze_reviews(filtered_reviews: list):
     analysis['gp_rating'] = sum(gp_ratings)/len(gp_ratings) if gp_ratings else 0
     analysis['ios_rating'] = sum(ios_ratings)/len(ios_ratings) if ios_ratings else 0
     
-    if openai.api_key:
+    if client.api_key is not None:
         reviews_text = "\n".join([r[1] for r in filtered_reviews])
         analysis['ai_analysis'] = analyze_with_ai(reviews_text)
     
@@ -287,6 +282,8 @@ def display_analysis(analysis: dict, filtered_reviews: list):
             st.markdown("---")
             st.subheader("🤖 ИИ Анализ")
             st.markdown(analysis['ai_analysis'])
+        else:
+            st.warning("AI-анализ недоступен. Проверьте API-ключ OpenAI")
     
     with tab2:
         reviews_df = pd.DataFrame([{
