@@ -484,9 +484,7 @@ def main():
                 type="primary",
                 key="unique_analyze_btn"
             ):
-                # Ваш код обработки
-            st.markdown('</div>', unsafe_allow_html=True)
-    
+        
     # Отображение результатов анализа
     if 'analysis_data' in st.session_state:
         display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
