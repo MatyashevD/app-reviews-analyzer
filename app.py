@@ -114,12 +114,11 @@ def display_search_results(results: dict):
                 st.write(f"**Ссылка:** {app['url']}")
                 if st.button(f"Выбрать", key=f"gp_{app['id']}"):
                     st.session_state.selected_gp_app = app
-    
     # App Store
     if results["app_store"]:
-        st.markdown("### App Store")
+        st.markdown("### App Store (лучшие совпадения)")
         for i, app in enumerate(results["app_store"], 1):
-            with st.expander(f"{i}. {app['title']}"):
+            with st.expander(f"{i}. {app['title']} ({app['match_score']}% совпадение)"):
                 st.write(f"**Разработчик:** {app['developer']}")
                 st.write(f"**Рейтинг:** {app['score']:.1f} ★")
                 st.write(f"**Ссылка:** {app['url']}")
