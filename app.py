@@ -384,15 +384,15 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         st.experimental_rerun()
 
 def main():
-     st.set_page_config(
+    st.set_page_config(
         page_title="Поиск приложений",
         layout="wide",
         menu_items={'About': "### Поиск мобильных приложений v2.0"}
     )
-     st.title("📲 Поиск мобильных приложений")
+    st.title("📲 Поиск мобильных приложений")
     
     # Поисковая строка
-     search_query = st.text_input(
+    search_query = st.text_input(
         "Введите название приложения:",
         placeholder="Например: TikTok, СберБанк",
         key="search_input"
