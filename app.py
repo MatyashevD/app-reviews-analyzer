@@ -270,13 +270,34 @@ def analyze_reviews(filtered_reviews: list):
         else:
             ios_ratings.append(rating)
         
+        # Заменяем использование noun_chunks на ручное извлечение фраз
         doc = nlp(text)
-        phrases = [
-            chunk.text.lower() 
-            for chunk in doc.noun_chunks 
-            if 2 <= len(chunk.text.split()) <= 3
+        phrases = []
+        current_phrase = []
+        
+        for token in doc:
+            if token.pos_ in ['NOUN', 'PROPN', 'ADJ'] and not token.is_stop:
+                current_phrase.append(token.text)
+                if len(current_phrase) == 3:
+                    phrases.append(' '.join(current_phrase))
+                    current_phrase = []
+            else:
+                if current_phrase:
+                    phrases.append(' '.join(current_phrase))
+                    current_phrase = []
+        
+        if current_phrase:
+            phrases.append(' '.join(current_phrase))
+        
+        # Фильтрация результатов
+        filtered_phrases = [
+            phrase.strip().lower()
+            for phrase in phrases
+            if 2 <= len(phrase.split()) <= 3
+            and len(phrase) > 4
         ]
-        for phrase in phrases:
+        
+        for phrase in filtered_phrases:
             analysis['key_phrases'][phrase] += 1
             if len(analysis['examples'][phrase]) < 3:
                 analysis['examples'][phrase].append(text[:100] + '...')
@@ -285,6 +306,7 @@ def analyze_reviews(filtered_reviews: list):
     analysis['ios_rating'] = sum(ios_ratings)/len(ios_ratings) if ios_ratings else 0
     
     return analysis
+
 
 def display_analysis(analysis: dict, filtered_reviews: list):
     st.header("📊 Результаты анализа", divider="rainbow")
