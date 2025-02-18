@@ -226,17 +226,32 @@ def analyze_reviews(filtered_reviews: list):
     
     for date, text, platform, rating in filtered_reviews:
         analysis['platform_counts'][platform] += 1
-        if platform == 'Google Play': gp_ratings.append(rating)
-        else: ios_ratings.append(rating)
+        if platform == 'Google Play': 
+            gp_ratings.append(rating)
+        else: 
+            ios_ratings.append(rating)
         
+        # Новый метод извлечения фраз
         doc = nlp(text)
-        phrases = [
-            chunk.text.lower() 
-            for chunk in doc.noun_chunks 
-            if 2 <= len(chunk.text.split()) <= 3
-        ]
+        phrases = []
+        current_phrase = []
+        
+        for token in doc:
+            # Собираем последовательности из существительных/прилагательных
+            if token.pos_ in ['NOUN', 'PROPN', 'ADJ'] and not token.is_stop:
+                current_phrase.append(token.text)
+            else:
+                if current_phrase:
+                    phrases.append(' '.join(current_phrase))
+                    current_phrase = []
+        
+        if current_phrase:
+            phrases.append(' '.join(current_phrase))
+        
+        # Фильтрация и подсчет
         for phrase in phrases:
-            analysis['key_phrases'][phrase] += 1
+            if 2 <= len(phrase.split()) <= 3 and len(phrase) > 4:
+                analysis['key_phrases'][phrase.lower()] += 1
     
     analysis['gp_rating'] = sum(gp_ratings)/len(gp_ratings) if gp_ratings else 0
     analysis['ios_rating'] = sum(ios_ratings)/len(ios_ratings) if ios_ratings else 0
