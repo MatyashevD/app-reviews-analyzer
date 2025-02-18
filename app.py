@@ -426,7 +426,7 @@ def main():
         if st.button("🚀 Начать анализ отзывов", type="primary"):
             get_reviews()
             
-            if reviews_gp or reviews_ios:
+    if reviews_gp or reviews_ios:
                 filtered_reviews = reviews_gp + reviews_ios
                 # Фильтрация отзывов по датам
                 start_datetime = datetime.datetime.combine(start_date, datetime.time.min)
