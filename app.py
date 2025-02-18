@@ -96,65 +96,67 @@ def display_search_results(results: dict):
     st.subheader("🔍 Результаты поиска", divider="rainbow")
     
     st.markdown("""
-<style>
-    .mobile-card {
-        border: 1px solid #e0e0e0 !important;
-        border-radius: 8px !important;
-        padding: 6px 8px !important;
-        margin: 4px 0 !important;
-        transition: all 0.2s !important;
-        background-color: white !important;
-        cursor: pointer !important;
-        position: relative !important;
-    }
-    .mobile-card:hover { 
-        box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
-    }
-    .selected-card {
-        border-color: #4CAF50 !important;
-        background-color: #f8fff8 !important;
-    }
-    .card-row { 
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-    }
-    .app-title {
-        font-size: 13px !important;
-        font-weight: 500 !important;
-        color: #1a1a1a !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        max-width: 70% !important;
-    }
-    .meta-info { 
-        display: flex !important;
-        align-items: center !important;
-        gap: 8px !important;
-    }
-    .rating-badge { 
-        font-size: 12px !important;
-        color: #ff9800 !important;
-        white-space: nowrap !important;
-    }
-    .platform-tag {
-        font-size: 10px !important;
-        padding: 2px 6px !important;
-        border-radius: 4px !important;
-        background: #f0f0f0 !important;
-    }
-    .match-percent { 
-        font-size: 11px !important;
-        color: #666 !important;
-    }
-    .stButton>button[kind="primary"] {
-        background-color: #4CAF50 !important;
-        border-color: #45a049 !important;
-        min-width: 30px !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+    <style>
+        .mobile-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 8px;
+            margin: 6px 0;
+            background: white;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .mobile-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .selected-card {
+            border: 2px solid #4CAF50 !important;
+            background: #f8fff8 !important;
+        }
+        .app-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+        .developer {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        .rating-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .rating {
+            font-size: 13px;
+            color: #ff9800;
+            font-weight: 500;
+        }
+        .platform-tag {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #4285f4;
+            color: white;
+            font-weight: 500;
+        }
+        .match-percent {
+            font-size: 12px;
+            color: #666;
+        }
+        .select-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
     if not results["google_play"] and not results["app_store"]:
         st.warning("Приложения не найдены")
