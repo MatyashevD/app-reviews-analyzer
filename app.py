@@ -47,20 +47,44 @@ def search_apps(query: str):
     try:
         itunes_response = requests.get(
             "https://itunes.apple.com/search",
-            params={"term": query, "country": DEFAULT_COUNTRY, "media": "software", "limit": 20},
+            params={
+                "term": query,
+                "country": DEFAULT_COUNTRY,
+                "media": "software",
+                "limit": 20,
+                "entity": "software,iPadSoftware",
+                "lang": "ru_ru"
+            },
             headers={"User-Agent": "Mozilla/5.0"}
         )
         ios_data = itunes_response.json()
         
-        sorted_results = sorted(ios_data.get("results", []), key=lambda x: x['trackName'])
-        processed = [max(group, key=lambda x: fuzz.token_set_ratio(query, x['trackName'])) 
-                   for _, group in groupby(sorted_results, key=lambda x: x['trackName'])]
+        sorted_results = sorted(ios_data.get("results", []), 
+                              key=lambda x: x['trackName'])
+        grouped = groupby(sorted_results, key=lambda x: x['trackName'])
+        
+        processed = []
+        for name, group in grouped:
+            best_match = max(group, 
+                           key=lambda x: fuzz.token_set_ratio(query, x['trackName']))
+            # Добавляем расчет match_score для каждого элемента
+            processed.append({
+                **best_match,
+                "match_score": fuzz.token_set_ratio(query, best_match['trackName'])
+            })
+
+        # Сортировка по match_score
+        processed.sort(key=lambda x: x['match_score'], reverse=True)
         
         results["app_store"] = [{
-            "id": r["trackId"], "title": r["trackName"], 
-            "developer": r["artistName"], "score": r.get("averageUserRating", 0),
-            "platform": 'App Store', "match_score": fuzz.token_set_ratio(query, r['trackName'])
-        } for r in sorted(processed, key=lambda x: x['match_score'], reverse=True)[:MAX_RESULTS]]
+            "id": r["trackId"],
+            "title": r["trackName"],
+            "developer": r["artistName"],
+            "score": r.get("averageUserRating", 0),
+            "url": r["trackViewUrl"],
+            "platform": 'App Store',
+            "match_score": r['match_score']  # Теперь поле существует
+        } for r in processed if r.get('averageUserRating', 0) > 0][:MAX_RESULTS]
         
     except Exception as e:
         st.error(f"Ошибка поиска в App Store: {str(e)}")
