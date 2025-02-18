@@ -478,7 +478,7 @@ def main():
             """, unsafe_allow_html=True)
             
             st.markdown('<div class="fixed-button">', unsafe_allow_html=True)
-            if st.button(
+    if st.button(
                 "🚀 Запустить анализ",
                 use_container_width=True,
                 type="primary",
@@ -486,7 +486,7 @@ def main():
             ):
         
     # Отображение результатов анализа
-        if 'analysis_data' in st.session_state:
+    if 'analysis_data' in st.session_state:
         display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
 
 
