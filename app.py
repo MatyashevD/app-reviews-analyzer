@@ -53,25 +53,46 @@ def search_apps(query: str):
             "https://itunes.apple.com/search",
             params={
                 "term": query,
-                "country": DEFAULT_COUNTRY,
+                "country": "RU",
                 "media": "software",
-                "limit": MAX_RESULTS,
-                "lang": f"{DEFAULT_LANG}_RU"
-            }
+                "limit": 20,
+                "entity": "software,iPadSoftware",
+                "lang": "ru_ru"
+            },
+            headers={"User-Agent": "Mozilla/5.0"}
         )
         ios_data = itunes_response.json()
+        
+        # Группировка по названию приложения
+        sorted_results = sorted(ios_data.get("results", []), 
+                              key=lambda x: x['trackName'])
+        grouped = groupby(sorted_results, key=lambda x: x['trackName'])
+        
+        # Фильтрация и выбор лучшего совпадения
+        processed = []
+        for name, group in grouped:
+            best_match = max(group, 
+                           key=lambda x: fuzz.token_set_ratio(query, x['trackName']))
+            processed.append(best_match)
+
+        # Сортировка по релевантности
+        processed.sort(key=lambda x: fuzz.token_set_ratio(query, x['trackName']), 
+                      reverse=True)
+        
         results["app_store"] = [{
             "id": r["trackId"],
             "title": r["trackName"],
             "developer": r["artistName"],
-            "score": r["averageUserRating"],
-            "url": r["trackViewUrl"]
-        } for r in ios_data.get("results", [])]
+            "score": r.get("averageUserRating", 0),
+            "url": r["trackViewUrl"],
+            "match_score": fuzz.token_set_ratio(query, r['trackName'])
+        } for r in processed if r['match_score'] > 65][:5]
         
     except Exception as e:
         st.error(f"Ошибка поиска в App Store: {str(e)}")
     
     return results
+
 
 def display_search_results(results: dict):
     """Отображение результатов поиска"""
