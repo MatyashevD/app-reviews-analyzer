@@ -431,12 +431,25 @@ def main():
 
     # Блок анализа
     if selected_count == 2:
-        with st.container():
-            cols = st.columns(3)
-            start_date = cols[0].date_input("Начальная дата", datetime.date.today() - datetime.timedelta(days=30))
-            end_date = cols[1].date_input("Конечная дата", datetime.date.today())
-            
-            if cols[2].button("🚀 Запустить анализ", use_container_width=True, type="primary"):
+    with st.container():
+        cols = st.columns([3, 3, 2, 1])  # Новое соотношение колонок
+        
+        # Поля дат
+        with cols[0]:
+            start_date = st.date_input("Начальная дата", datetime.date.today() - datetime.timedelta(days=30))
+        with cols[1]:
+            end_date = st.date_input("Конечная дата", datetime.date.today())
+        
+        # Пустая колонка для отступа
+        cols[2].empty()
+        
+        # Кнопка анализа
+        with cols[3]:
+            st.write("\n")  # Вертикальный отступ
+            if st.button("🚀 Запустить анализ", 
+                       use_container_width=True, 
+                       type="primary",
+                       help="Начать анализ выбранных отзывов"):
                 with st.spinner("Анализ отзывов..."):
                     all_reviews = []
                     try:
