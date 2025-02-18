@@ -431,59 +431,66 @@ def main():
 
         
         # Блок анализа с идеальным выравниванием
-if selected_count == 2:
-    with st.container():
+    if selected_count == 2:
+      with st.container():
+        # Сбрасываем возможные стилевые конфликты
         st.markdown("""
         <style>
-            /* Кастомные стили для выравнивания */
+            /* Reset стилей для этого блока */
             div[data-testid="stHorizontalBlock"] {
-                align-items: end !important;
+                align-items: baseline !important;
+                gap: 0.5rem;
             }
-            .stDateInput > div {
+            div[data-testid="column"] {
                 padding-bottom: 0 !important;
-            }
-            button[data-testid="baseButton-primary"] {
-                margin-top: 29px !important;
-                height: 38px !important;
             }
         </style>
         """, unsafe_allow_html=True)
 
-        # Создаем 3 колонки с теми же пропорциями, что и в поисковой панели
-        col1, col2, col3 = st.columns([3.5, 3.5, 2])
+        # Создаем новый контейнер с чистой структурой
+        main_cols = st.columns([4, 4, 2])
         
-        # Поле начальной даты
-        with col1:
+        # Блок дат
+        with main_cols[0]:
             start_date = st.date_input(
                 "Начальная дата",
-                datetime.date.today() - datetime.timedelta(days=30),
-                key='start_date_unique'
+                value=datetime.date.today()-datetime.timedelta(days=30),
+                key="unique_start_date"
             )
         
-        # Поле конечной даты
-        with col2:
+        with main_cols[1]:
             end_date = st.date_input(
                 "Конечная дата",
-                datetime.date.today(),
-                key='end_date_unique'
+                value=datetime.date.today(),
+                key="unique_end_date"
             )
         
-        # Кнопка анализа
-        with col3:
-            st.write("")  # Критически важный вертикальный отступ
+        # Блок кнопки с абсолютным позиционированием
+        with main_cols[2]:
+            st.markdown("""
+            <style>
+                .fixed-button {
+                    position: relative;
+                    top: 8px;
+                    width: 100%;
+                }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            st.markdown('<div class="fixed-button">', unsafe_allow_html=True)
             if st.button(
                 "🚀 Запустить анализ",
                 use_container_width=True,
                 type="primary",
-                key='analyze_btn_unique'
+                key="unique_analyze_btn"
             ):
-                # Ваш код обработки анализа
+                # Ваш код обработки
+            st.markdown('</div>', unsafe_allow_html=True)
     
     # Отображение результатов анализа
     if 'analysis_data' in st.session_state:
         display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
 
-        st.markdown("---")
 
 if __name__ == "__main__":
     main()
