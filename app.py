@@ -93,7 +93,6 @@ def search_apps(query: str):
     return results
 
 def display_search_results(results: dict):
-    """Минималистичные карточки без иконок в мобильном стиле"""
     st.subheader("🔍 Результаты поиска", divider="rainbow")
     
     st.markdown("""
@@ -108,18 +107,9 @@ def display_search_results(results: dict):
             cursor: pointer;
             position: relative;
         }
-        .mobile-card:hover {
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-        }
-        .selected-card {
-            border-color: #4CAF50 !important;
-            background: #f8fff8;
-        }
-        .card-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .mobile-card:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+        .selected-card { border-color: #4CAF50 !important; background: #f8fff8; }
+        .card-row { display: flex; justify-content: space-between; align-items: center; }
         .app-title {
             font-size: 13px;
             font-weight: 500;
@@ -129,25 +119,19 @@ def display_search_results(results: dict):
             text-overflow: ellipsis;
             max-width: 70%;
         }
-        .meta-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .rating-badge {
-            font-size: 12px;
-            color: #ff9800;
-            white-space: nowrap;
-        }
+        .meta-info { display: flex; align-items: center; gap: 8px; }
+        .rating-badge { font-size: 12px; color: #ff9800; white-space: nowrap; }
         .platform-tag {
             font-size: 10px;
             padding: 2px 6px;
             border-radius: 4px;
             background: #f0f0f0;
         }
-        .match-percent {
-            font-size: 11px;
-            color: #666;
+        .match-percent { font-size: 11px; color: #666; }
+        .stButton>button[kind="primary"] {
+            background-color: #4CAF50 !important;
+            border-color: #45a049 !important;
+            min-width: 30px !important;
         }
     </style>
     """, unsafe_allow_html=True)
