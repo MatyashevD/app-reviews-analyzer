@@ -433,7 +433,7 @@ def main():
     # Блок анализа
     if selected_count == 2:
        with st.container():
-        st.markdown("""
+         st.markdown("""
         <style>
             /* Жесткое выравнивание элементов */
             div[data-testid="stHorizontalBlock"] {
@@ -468,15 +468,20 @@ def main():
         
         # Кнопка анализа
         with cols[2]:
-            st.write("")  # Критически важный вертикальный отступ
+            st.write("")  # Вертикальный отступ
             if st.button(
                 "🚀 Запустить анализ",
                 use_container_width=True,
                 type="primary",
                 key='analyze_btn'
             ):
-    if 'analysis_data' in st.session_state:
-        display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)  # Добавлен отступ     
+                # Логика обработки анализа
+                with st.spinner("Анализ..."):
+                    # Ваш код обработки данных
+                    pass  # Замените на реальный код
 
+    # Проверка результатов анализа (должна быть ВНЕ блока анализа)
+    if 'analysis_data' in st.session_state:
+        display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
 if __name__ == "__main__":
     main()
