@@ -430,9 +430,9 @@ def main():
         display_search_results(st.session_state.search_results)
 
         
-        # Блок анализа с идеальным выравниванием
-    if selected_count == 2:
-      with st.container():
+        # Блок анализа
+if selected_count == 2:
+    with st.container():
         # Сбрасываем возможные стилевые конфликты
         st.markdown("""
         <style>
@@ -478,16 +478,39 @@ def main():
             """, unsafe_allow_html=True)
             
             st.markdown('<div class="fixed-button">', unsafe_allow_html=True)
-    if st.button(
+            if st.button(
                 "🚀 Запустить анализ",
                 use_container_width=True,
                 type="primary",
                 key="unique_analyze_btn"
             ):
-        
-    # Отображение результатов анализа
-    if 'analysis_data' in st.session_state:
-        display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
+                with st.spinner("Анализ отзывов..."):
+                    all_reviews = []
+                    try:
+                        if st.session_state.selected_gp_app:
+                            all_reviews += get_reviews(
+                                st.session_state.selected_gp_app['id'], 
+                                'google_play', 
+                                start_date, 
+                                end_date
+                            )
+                        if st.session_state.selected_ios_app:
+                            all_reviews += get_reviews(
+                                st.session_state.selected_ios_app['id'], 
+                                'app_store', 
+                                start_date, 
+                                end_date
+                            )
+                        
+                        st.session_state.filtered_reviews = sorted(all_reviews, key=lambda x: x[0], reverse=True)
+                        st.session_state.analysis_data = analyze_reviews(st.session_state.filtered_reviews)
+                    except Exception as e:
+                        st.error(f"Ошибка анализа: {str(e)}")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+# Отображение результатов анализа
+if 'analysis_data' in st.session_state:
+    display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
 
 
 if __name__ == "__main__":
