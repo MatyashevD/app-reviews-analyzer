@@ -431,8 +431,7 @@ def main():
 
         
     # Блок анализа
-    
-if selected_count == 2:
+    if selected_count == 2:
        with st.container():
         st.markdown("""
         <style>
@@ -476,8 +475,8 @@ if selected_count == 2:
                 type="primary",
                 key='analyze_btn'
             ):
-if 'analysis_data' in st.session_state:
-    display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)  # Добавлен отступ     
+        if 'analysis_data' in st.session_state:
+            display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)  # Добавлен отступ     
 
 if __name__ == "__main__":
     main()
