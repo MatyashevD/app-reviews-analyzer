@@ -471,40 +471,41 @@ if selected_count == 2:
             )
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # Кнопка анализа
-        with st.container():
-            st.markdown('<div class="analyze-btn">', unsafe_allow_html=True)
+        # Блок анализа (полностью аналогичный поисковой панели)
+if selected_count == 2:
+    with st.container():
+        # Используем те же пропорции колонок [4, 1] как в поиске
+        cols = st.columns([3.2, 3.2, 2.6, 1])  # 4 колонки с оригинальным соотношением
+        
+        # Начальная дата
+        with cols[0]:
+            start_date = st.date_input(
+                "Начальная дата",
+                datetime.date.today() - datetime.timedelta(days=30),
+                key='anal_start_date'
+            )
+        
+        # Конечная дата
+        with cols[1]:
+            end_date = st.date_input(
+                "Конечная дата",
+                datetime.date.today(),
+                key='anal_end_date'
+            )
+        
+        # Пустая колонка для отступа (как в оригинале)
+        cols[2].empty()
+        
+        # Кнопка анализа (аналогия с кнопкой поиска)
+        with cols[3]:
+            st.write("")  # Критически важный вертикальный отступ
             if st.button(
                 "🚀 Запустить анализ",
                 use_container_width=True,
                 type="primary",
-                help="Начать анализ выбранных отзывов"
+                key='anal_launch_btn'
             ):
-                with st.spinner("Анализ отзывов..."):
-                    all_reviews = []
-                    try:
-                        if st.session_state.selected_gp_app:
-                            all_reviews += get_reviews(
-                                st.session_state.selected_gp_app['id'], 
-                                'google_play', 
-                                start_date, 
-                                end_date
-                            )
-                        if st.session_state.selected_ios_app:
-                            all_reviews += get_reviews(
-                                st.session_state.selected_ios_app['id'], 
-                                'app_store', 
-                                start_date, 
-                                end_date
-                            )
-                        
-                        st.session_state.filtered_reviews = sorted(all_reviews, key=lambda x: x[0], reverse=True)
-                        st.session_state.analysis_data = analyze_reviews(st.session_state.filtered_reviews)
-                    except Exception as e:
-                        st.error(f"Ошибка анализа: {str(e)}")
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+                # Логика обработки анализа
     
     # Отображение результатов анализа
     if 'analysis_data' in st.session_state:
