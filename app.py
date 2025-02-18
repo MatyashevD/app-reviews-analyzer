@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 # Загрузка API ключа
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key=os.getenv("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"))
 
 def load_nlp_model():
     try:
