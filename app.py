@@ -31,10 +31,25 @@ def load_sentiment_model():
 
 def search_google_play(app_name: str) -> str:
     try:
-        result = gp_app(app_name, lang='ru', country='ru')
-        return result['appId']
+        # Кодируем название приложения для использования в URL
+        search_query = urllib.parse.quote(app_name)
+        search_url = f"https://play.google.com/store/search?q={search_query}&c=apps"
+        
+        # Отправляем запрос на Google Play
+        response = requests.get(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Находим первый результат
+        app_link = soup.find('a', {'class': 'poRVub'})
+        if app_link:
+            app_id = app_link.get('href').split('id=')[1].split('&')[0]
+            app_url = f"https://play.google.com/store/apps/details?id={app_id}&hl=ru"
+            return app_url  # Возвращаем URL приложения на Google Play
+        else:
+            st.error("Приложение не найдено на Google Play.")
+            return None
     except Exception as e:
-        st.error(f"Ошибка поиска Google Play: {str(e)}")
+        st.error(f"Ошибка при поиске в Google Play: {str(e)}")
         return None
 
 def search_app_store(app_name: str) -> str:
