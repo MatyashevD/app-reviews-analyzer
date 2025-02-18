@@ -93,7 +93,7 @@ def search_apps(query: str):
     return results
 
 def display_search_results(results: dict):
-    """Обновленный UI с возможностью выбора двух приложений"""
+    """Обновленный UI с правильным отображением названий и скрытием списка"""
     st.subheader("🔍 Результаты поиска", divider="rainbow")
     
     if not results["google_play"] and not results["app_store"]:
@@ -104,7 +104,10 @@ def display_search_results(results: dict):
     all_results = results["google_play"] + results["app_store"]
     all_results.sort(key=lambda x: (-x['match_score'], -x['score']))
 
-    # Стили для компактных карточек
+    # Проверка выбора двух приложений
+    both_selected = st.session_state.selected_gp_app and st.session_state.selected_ios_app
+
+    # Стили для карточек
     st.markdown("""
     <style>
         .comparison-card {
@@ -132,78 +135,76 @@ def display_search_results(results: dict):
             padding: 4px 8px;
             border-radius: 4px;
         }
-        .selection-counter {
-            position: absolute;
-            bottom: 8px;
-            right: 8px;
-            font-size: 12px;
-            color: #4CAF50;
-        }
         .card-title {
             font-size: 14px;
             font-weight: 500;
             margin-right: 40px;
+            color: #1a1a1a;
         }
         .card-developer {
             font-size: 12px;
             color: #666;
             margin-top: 4px;
         }
+        .selection-info {
+            font-size: 12px;
+            color: #4CAF50;
+            margin-top: 8px;
+        }
     </style>
     """, unsafe_allow_html=True)
 
-    # Отображение карточек в 3 колонки
-    cols = st.columns(3)
-    for idx, app in enumerate(all_results):
-        with cols[idx % 3]:
-            is_selected_gp = app['platform'] == 'Google Play' and \
-                st.session_state.selected_gp_app and \
-                st.session_state.selected_gp_app['id'] == app['id']
-            
-            is_selected_ios = app['platform'] == 'App Store' and \
-                st.session_state.selected_ios_app and \
-                st.session_state.selected_ios_app['id'] == app['id']
-            
-            is_selected = is_selected_gp or is_selected_ios
-            platform_color = "#4285f4" if app['platform'] == 'Google Play' else "#000000"
-            selection_count = (1 if st.session_state.selected_gp_app else 0) + \
-                             (1 if st.session_state.selected_ios_app else 0)
+    # Отображение основного списка только если не выбраны оба приложения
+    if not both_selected:
+        # Отображение карточек в 3 колонки
+        cols = st.columns(3)
+        for idx, app in enumerate(all_results):
+            with cols[idx % 3]:
+                is_selected = (
+                    (app['platform'] == 'Google Play' and 
+                     st.session_state.selected_gp_app and 
+                     st.session_state.selected_gp_app['id'] == app['id']) or
+                    (app['platform'] == 'App Store' and 
+                     st.session_state.selected_ios_app and 
+                     st.session_state.selected_ios_app['id'] == app['id'])
+                )
+                
+                platform_color = "#4285f4" if app['platform'] == 'Google Play' else "#000000"
 
-            card_html = f"""
-            <div class="comparison-card {'selected-card' if is_selected else ''}">
-                <div class="platform-tag" style="background:{platform_color}10;color:{platform_color}">
-                    {app['platform']}
+                card_html = f"""
+                <div class="comparison-card {'selected-card' if is_selected else ''}">
+                    <div class="platform-tag" style="background:{platform_color}10;color:{platform_color}">
+                        {app['platform']}
+                    </div>
+                    <div class="card-title">{app['title']}</div>
+                    <div class="card-developer">{app['developer']}</div>
+                    <div style="margin-top:8px;">
+                        <span style="color:#ff9800;">★ {app['score']:.1f}</span>
+                        <span style="float:right;font-size:12px;color:#666">{app['match_score']}%</span>
+                    </div>
                 </div>
-                <div class="card-title">{app['title']}</div>
-                <div class="card-developer">{app['developer']}</div>
-                <div style="margin-top:8px;">
-                    <span style="color:#ff9800;">★ {app['score']:.1f}</span>
-                    <span style="float:right;font-size:12px;color:#666">{app['match_score']}%</span>
-                </div>
-                {f'<div class="selection-counter">Выбрано ({selection_count}/2)</div>' if is_selected else ''}
-            </div>
-            """
-            
-            st.markdown(card_html, unsafe_allow_html=True)
-            
-            # Обработка выбора
-            if st.button(
-                "✓" if is_selected else "Выбрать",
-                key=f"select_{app['id']}",
-                type="primary" if is_selected else "secondary",
-                use_container_width=True
-            ):
-                if app['platform'] == 'Google Play':
-                    if st.session_state.selected_gp_app and st.session_state.selected_gp_app['id'] == app['id']:
-                        st.session_state.selected_gp_app = None
+                """
+                
+                st.markdown(card_html, unsafe_allow_html=True)
+                
+                # Обработка выбора
+                if st.button(
+                    "✓ Выбрано" if is_selected else "Выбрать",
+                    key=f"select_{app['id']}",
+                    type="primary" if is_selected else "secondary",
+                    use_container_width=True
+                ):
+                    if app['platform'] == 'Google Play':
+                        if st.session_state.selected_gp_app and st.session_state.selected_gp_app['id'] == app['id']:
+                            st.session_state.selected_gp_app = None
+                        else:
+                            st.session_state.selected_gp_app = app
                     else:
-                        st.session_state.selected_gp_app = app
-                else:
-                    if st.session_state.selected_ios_app and st.session_state.selected_ios_app['id'] == app['id']:
-                        st.session_state.selected_ios_app = None
-                    else:
-                        st.session_state.selected_ios_app = app
-                st.rerun()
+                        if st.session_state.selected_ios_app and st.session_state.selected_ios_app['id'] == app['id']:
+                            st.session_state.selected_ios_app = None
+                        else:
+                            st.session_state.selected_ios_app = app
+                    st.rerun()
 
     # Панель выбранных приложений
     selected_apps = []
@@ -227,16 +228,17 @@ def display_search_results(results: dict):
                     """)
             
             with cols[1]:
-                st.write("")  # Вертикальное выравнивание
                 st.write("")
-                if st.button("Очистить выбор", use_container_width=True):
+                st.write("")
+                if st.button("Изменить выбор", use_container_width=True):
                     st.session_state.selected_gp_app = None
                     st.session_state.selected_ios_app = None
                     st.rerun()
 
     # Валидация выбора
-    if (st.session_state.selected_gp_app or st.session_state.selected_ios_app) and \
-        not (st.session_state.selected_gp_app and st.session_state.selected_ios_app):
+    if both_selected:
+        st.success("✓ Выбрано 2 приложения для сравнения")
+    elif len(selected_apps) > 0:
         st.warning("⚠️ Для сравнения необходимо выбрать по одному приложению из каждого магазина")
 
 def get_reviews(app_id: str, platform: str, 
