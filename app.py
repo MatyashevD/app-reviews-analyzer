@@ -93,23 +93,20 @@ def search_apps(query: str):
     return results
 
 def display_search_results(results: dict):
-    """Обновленный UI с правильным отображением названий и скрытием списка"""
+    """Современный UI с компактными карточками и зелеными кнопками"""
     st.subheader("🔍 Результаты поиска", divider="rainbow")
     
-    if not results["google_play"] and not results["app_store"]:
-        st.warning("Приложения не найдены")
-        return
-
-    # Все результаты
-    all_results = results["google_play"] + results["app_store"]
-    all_results.sort(key=lambda x: (-x['match_score'], -x['score']))
-
-    # Проверка выбора двух приложений
-    both_selected = st.session_state.selected_gp_app and st.session_state.selected_ios_app
-
-    # Стили для карточек
     st.markdown("""
     <style>
+        .stButton>button[kind="primary"] {
+            background-color: #4CAF50 !important;
+            border-color: #45a049 !important;
+            color: white !important;
+        }
+        .stButton>button[kind="primary"]:hover {
+            background-color: #45a049 !important;
+            border-color: #3d8b40 !important;
+        }
         .comparison-card {
             border: 2px solid transparent;
             border-radius: 10px;
@@ -146,17 +143,18 @@ def display_search_results(results: dict):
             color: #666;
             margin-top: 4px;
         }
-        .selection-info {
-            font-size: 12px;
-            color: #4CAF50;
-            margin-top: 8px;
-        }
     </style>
     """, unsafe_allow_html=True)
 
-    # Отображение основного списка только если не выбраны оба приложения
+    if not results["google_play"] and not results["app_store"]:
+        st.warning("Приложения не найдены")
+        return
+
+    all_results = results["google_play"] + results["app_store"]
+    all_results.sort(key=lambda x: (-x['match_score'], -x['score']))
+    both_selected = st.session_state.selected_gp_app and st.session_state.selected_ios_app
+
     if not both_selected:
-        # Отображение карточек в 3 колонки
         cols = st.columns(3)
         for idx, app in enumerate(all_results):
             with cols[idx % 3]:
@@ -187,7 +185,6 @@ def display_search_results(results: dict):
                 
                 st.markdown(card_html, unsafe_allow_html=True)
                 
-                # Обработка выбора
                 if st.button(
                     "✓ Выбрано" if is_selected else "Выбрать",
                     key=f"select_{app['id']}",
@@ -206,7 +203,6 @@ def display_search_results(results: dict):
                             st.session_state.selected_ios_app = app
                     st.rerun()
 
-    # Панель выбранных приложений
     selected_apps = []
     if st.session_state.selected_gp_app:
         selected_apps.append(st.session_state.selected_gp_app)
@@ -235,7 +231,6 @@ def display_search_results(results: dict):
                     st.session_state.selected_ios_app = None
                     st.rerun()
 
-    # Валидация выбора
     if both_selected:
         st.success("✓ Выбрано 2 приложения для сравнения")
     elif len(selected_apps) > 0:
