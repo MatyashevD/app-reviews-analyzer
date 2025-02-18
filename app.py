@@ -438,7 +438,7 @@ def main():
                 
                 # Отображаем результаты
                 display_analysis(analysis, filtered_reviews)
-            else:
+    else:
                 st.warning("Не удалось найти отзывы.")
 
 if __name__ == "__main__":
