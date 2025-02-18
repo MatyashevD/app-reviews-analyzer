@@ -189,25 +189,23 @@ def get_reviews(app_id: str, platform: str,
 
 
 def analyze_with_ai(reviews_text: str):
+    """Анализ отзывов через OpenAI API (новый синтаксис)"""
     try:
-        response = openai.ChatCompletion.create(
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[{
                 "role": "system",
-                "content": """Сгенерируй анализ отзывов в формате:
-                1. Основные проблемы (3-5 пунктов)
-                2. Распределение тональности (проценты)
-                3. Рекомендации по улучшению
-                
-                Используй маркдаун для оформления"""
+                "content": """Сгенерируй анализ отзывов в формате:..."""  # Ваш промпт
             }, {
-                "role": "user",
+                "role": "user", 
                 "content": f"Отзывы:\n{reviews_text[:10000]}"
             }],
             temperature=0.3,
             max_tokens=1500
         )
-        return response.choices[0].message['content']
+        return response.choices[0].message.content
     except Exception as e:
         st.error(f"AI анализ недоступен: {str(e)}")
         return None
