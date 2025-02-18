@@ -432,85 +432,84 @@ def main():
         
     # Блок анализа с идеальным выравниванием
     if selected_count == 2:
-       with st.container():
-        # Сбрасываем возможные стилевые конфликты
-        st.markdown("""
-        <style>
-            /* Reset стилей для этого блока */
-            div[data-testid="stHorizontalBlock"] {
-                align-items: baseline !important;
-                gap: 0.5rem;
-            }
-            div[data-testid="column"] {
-                padding-bottom: 0 !important;
-            }
-        </style>
-        """, unsafe_allow_html=True)
-
-        # Создаем новый контейнер с чистой структурой
-        main_cols = st.columns([4, 4, 2])
-        
-        # Блок дат
-          with main_cols[0]:
-            start_date = st.date_input(
-                "Начальная дата",
-                value=datetime.date.today()-datetime.timedelta(days=30),
-                key="unique_start_date"
-            )
-        
-          with main_cols[1]:
-            end_date = st.date_input(
-                "Конечная дата",
-                value=datetime.date.today(),
-                key="unique_end_date"
-            )
-        
-        # Блок кнопки с абсолютным позиционированием
-          with main_cols[2]:
+        with st.container():
+            # Сбрасываем возможные стилевые конфликты
             st.markdown("""
             <style>
-                .fixed-button {
-                    position: relative;
-                    top: 8px;
-                    width: 100%;
+                div[data-testid="stHorizontalBlock"] {
+                    align-items: baseline !important;
+                    gap: 0.5rem;
+                }
+                div[data-testid="column"] {
+                    padding-bottom: 0 !important;
                 }
             </style>
             """, unsafe_allow_html=True)
-            
-            st.markdown('<div class="fixed-button">', unsafe_allow_html=True)
-            if st.button(
-                "🚀 Запустить анализ",
-                use_container_width=True,
-                type="primary",
-                key="unique_analyze_btn"
-            ):
-                with st.spinner("Анализ отзывов..."):
-                    all_reviews = []
-                    try:
-                        if st.session_state.selected_gp_app:
-                            all_reviews += get_reviews(
-                                st.session_state.selected_gp_app['id'], 
-                                'google_play', 
-                                start_date, 
-                                end_date
-                            )
-                        if st.session_state.selected_ios_app:
-                            all_reviews += get_reviews(
-                                st.session_state.selected_ios_app['id'], 
-                                'app_store', 
-                                start_date, 
-                                end_date
-                            )
-                        
-                        st.session_state.filtered_reviews = sorted(all_reviews, key=lambda x: x[0], reverse=True)
-                        st.session_state.analysis_data = analyze_reviews(st.session_state.filtered_reviews)
-                    except Exception as e:
-                        st.error(f"Ошибка анализа: {str(e)}")
-            st.markdown('</div>', unsafe_allow_html=True)
 
-# Отображение результатов анализа
-  if 'analysis_data' in st.session_state:
-      display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
+            # Создаем новый контейнер с чистой структурой
+            main_cols = st.columns([4, 4, 2])
+            
+            # Блок дат
+            with main_cols[0]:
+                start_date = st.date_input(
+                    "Начальная дата",
+                    value=datetime.date.today()-datetime.timedelta(days=30),
+                    key="unique_start_date"
+                )
+            
+            with main_cols[1]:
+                end_date = st.date_input(
+                    "Конечная дата",
+                    value=datetime.date.today(),
+                    key="unique_end_date"
+                )
+            
+            # Блок кнопки с абсолютным позиционированием
+            with main_cols[2]:
+                st.markdown("""
+                <style>
+                    .fixed-button {
+                        position: relative;
+                        top: 8px;
+                        width: 100%;
+                    }
+                </style>
+                """, unsafe_allow_html=True)
+                
+                st.markdown('<div class="fixed-button">', unsafe_allow_html=True)
+                if st.button(
+                    "🚀 Запустить анализ",
+                    use_container_width=True,
+                    type="primary",
+                    key="unique_analyze_btn"
+                ):
+                    with st.spinner("Анализ отзывов..."):
+                        all_reviews = []
+                        try:
+                            if st.session_state.selected_gp_app:
+                                all_reviews += get_reviews(
+                                    st.session_state.selected_gp_app['id'], 
+                                    'google_play', 
+                                    start_date, 
+                                    end_date
+                                )
+                            if st.session_state.selected_ios_app:
+                                all_reviews += get_reviews(
+                                    st.session_state.selected_ios_app['id'], 
+                                    'app_store', 
+                                    start_date, 
+                                    end_date
+                                )
+                            
+                            st.session_state.filtered_reviews = sorted(all_reviews, key=lambda x: x[0], reverse=True)
+                            st.session_state.analysis_data = analyze_reviews(st.session_state.filtered_reviews)
+                        except Exception as e:
+                            st.error(f"Ошибка анализа: {str(e)}")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+    # Отображение результатов анализа
+    if 'analysis_data' in st.session_state:
+        display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
 
 if __name__ == "__main__":
     main()
