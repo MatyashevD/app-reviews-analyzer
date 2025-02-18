@@ -93,55 +93,77 @@ def search_apps(query: str):
     return results
 
 def display_search_results(results: dict):
-    """Современный UI с компактными карточками и зелеными кнопками"""
+    """Современный UI с мобильными компактными карточками"""
     st.subheader("🔍 Результаты поиска", divider="rainbow")
     
     st.markdown("""
     <style>
-        .stButton>button[kind="primary"] {
-            background-color: #4CAF50 !important;
-            border-color: #45a049 !important;
-            color: white !important;
-        }
-        .stButton>button[kind="primary"]:hover {
-            background-color: #45a049 !important;
-            border-color: #3d8b40 !important;
-        }
-        .comparison-card {
-            border: 2px solid transparent;
-            border-radius: 10px;
-            padding: 12px;
-            margin: 8px 0;
+        .mobile-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 8px;
+            margin: 6px 0;
             transition: all 0.2s;
             background: white;
             cursor: pointer;
             position: relative;
         }
-        .comparison-card:hover {
-            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        .mobile-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .selected-card {
             border-color: #4CAF50 !important;
             background: #f8fff8;
         }
-        .platform-tag {
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .app-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .card-content {
+            flex-grow: 1;
+            min-width: 0;
+        }
+        .app-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #1a1a1a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .app-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+        }
+        .rating-badge {
+            font-size: 12px;
+            background: #fff3e0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #ff9800;
+        }
+        .match-percent {
+            font-size: 11px;
+            color: #666;
+        }
+        .platform-icon {
+            font-size: 14px;
             position: absolute;
             top: 8px;
             right: 8px;
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-        .card-title {
-            font-size: 14px;
-            font-weight: 500;
-            margin-right: 40px;
-            color: #1a1a1a;
-        }
-        .card-developer {
-            font-size: 12px;
-            color: #666;
-            margin-top: 4px;
         }
     </style>
     """, unsafe_allow_html=True)
