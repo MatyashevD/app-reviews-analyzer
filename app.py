@@ -434,8 +434,8 @@ def main():
     if selected_count == 2:
         with st.container():
         # Сбрасываем возможные стилевые конфликты
-        st.markdown("""
-        <style>
+           st.markdown("""
+           <style>
             /* Reset стилей для этого блока */
             div[data-testid="stHorizontalBlock"] {
                 align-items: baseline !important;
