@@ -31,13 +31,12 @@ def load_sentiment_model():
 
 def search_google_play(app_name: str) -> str:
     try:
-        # Ищем приложение по названию в Google Play с использованием google-play-scraper
-        result = app(app_name, lang='ru', country='ru')  # язык и страна могут быть изменены
-        app_id = result['appId']  # Получаем ID приложения
-        return app_id
+        result = gp_app(app_name, lang='ru', country='ru')
+        return result['appId']
     except Exception as e:
-        print(f"Ошибка при поиске приложения: {str(e)}")
+        st.error(f"Ошибка поиска Google Play: {str(e)}")
         return None
+
 def search_app_store(app_name: str) -> str:
     try:
         # Используем поиск по названию для получения app_id
@@ -64,7 +63,7 @@ def get_app_store_rating(app_id: str) -> float:
         return 0.0
 
 def get_google_play_reviews(app_name: str, lang: str = 'ru', country: str = 'ru', count: int = 100) -> tuple:
-    app_id = search_google_play_via_google(app_name)
+    app_id = search_google_play(app_name)
     if not app_id:
         return [], 0.0
     
@@ -195,6 +194,7 @@ def analyze_reviews(reviews: list) -> dict:
     analysis['key_phrases'] = Counter(dict(unique_phrases[:15]))
     
     return analysis
+
 def display_analysis(analysis: dict, filtered_reviews: list):
     st.header("📊 Результаты анализа")
     
