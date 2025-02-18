@@ -196,11 +196,11 @@ def display_search_results(results: dict):
                 st.markdown(card_html, unsafe_allow_html=True)
                 
                 if st.button(
-                    "✓ Выбрано" if is_selected else "Выбрать",
-                    key=f"select_{app['id']}",
-                    type="primary" if is_selected else "secondary",
-                    use_container_width=True
-                ):
+                "✓ Выбрано" if is_selected else "Выбрать",
+                key=f"select_{app['id']}",
+                type="primary" if is_selected else "secondary",
+                use_container_width=True
+            ):
                     if app['platform'] == 'Google Play':
                         if st.session_state.selected_gp_app and st.session_state.selected_gp_app['id'] == app['id']:
                             st.session_state.selected_gp_app = None
