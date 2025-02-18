@@ -92,7 +92,7 @@ def get_app_store_rating(app_id: str) -> float:
         return 0.0
 
 def get_google_play_reviews(app_name: str, lang: str = 'ru', country: str = 'ru', count: int = 100) -> tuple:
-    app_id = search_google_play(app_name)
+    app_id = search_google_play_via_google(app_name)
     if not app_id:
         return [], 0.0
     
