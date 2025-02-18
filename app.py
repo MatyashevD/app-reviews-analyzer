@@ -3,8 +3,6 @@ import re
 import streamlit as st
 import requests
 import pandas as pd
-from fuzzywuzzy import fuzz
-from itertools import groupby
 from bs4 import BeautifulSoup
 from google_play_scraper import search, app, reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
@@ -27,8 +25,27 @@ DEFAULT_LANG = 'ru'
 DEFAULT_COUNTRY = 'ru'
 
 def search_apps(query: str):
-    """Улучшенный поиск приложений с нечетким соответствием"""
+    """Поиск приложений по названию"""
     results = {"google_play": [], "app_store": []}
+    
+    try:
+        # Поиск в Google Play
+        gp_results = search(
+            query,
+            lang=DEFAULT_LANG,
+            country=DEFAULT_COUNTRY,
+            n_hits=MAX_RESULTS
+        )
+        results["google_play"] = [{
+            "id": r["appId"],
+            "title": r["title"],
+            "developer": r["developer"],
+            "score": r["score"],
+            "url": f"https://play.google.com/store/apps/details?id={r['appId']}"
+        } for r in gp_results]
+        
+    except Exception as e:
+        st.error(f"Ошибка поиска в Google Play: {str(e)}")
     
     try:
         # Поиск в App Store через iTunes API
@@ -36,40 +53,20 @@ def search_apps(query: str):
             "https://itunes.apple.com/search",
             params={
                 "term": query,
-                "country": "RU",
+                "country": DEFAULT_COUNTRY,
                 "media": "software",
-                "limit": 20,
-                "entity": "software,iPadSoftware",
-                "lang": "ru_ru"
-            },
-            headers={"User-Agent": "Mozilla/5.0"}
+                "limit": MAX_RESULTS,
+                "lang": f"{DEFAULT_LANG}_RU"
+            }
         )
         ios_data = itunes_response.json()
-        
-        # Группировка по названию приложения
-        sorted_results = sorted(ios_data.get("results", []), 
-                              key=lambda x: x['trackName'])
-        grouped = groupby(sorted_results, key=lambda x: x['trackName'])
-        
-        # Фильтрация и выбор лучшего совпадения
-        processed = []
-        for name, group in grouped:
-            best_match = max(group, 
-                           key=lambda x: fuzz.token_set_ratio(query, x['trackName']))
-            processed.append(best_match)
-
-        # Сортировка по релевантности
-        processed.sort(key=lambda x: fuzz.token_set_ratio(query, x['trackName']), 
-                      reverse=True)
-        
         results["app_store"] = [{
             "id": r["trackId"],
             "title": r["trackName"],
             "developer": r["artistName"],
-            "score": r.get("averageUserRating", 0),
-            "url": r["trackViewUrl"],
-            "match_score": fuzz.token_set_ratio(query, r['trackName'])
-        } for r in processed if r['match_score'] > 65][:5]
+            "score": r["averageUserRating"],
+            "url": r["trackViewUrl"]
+        } for r in ios_data.get("results", [])]
         
     except Exception as e:
         st.error(f"Ошибка поиска в App Store: {str(e)}")
@@ -77,17 +74,23 @@ def search_apps(query: str):
     return results
 
 def display_search_results(results: dict):
-    """Обновленное отображение результатов"""
-    if results["app_store"]:
-        st.markdown("### App Store (лучшие совпадения)")
-        for i, app in enumerate(results["app_store"], 1):
-            with st.expander(f"{i}. {app['title']} ({app['match_score']}% совпадение)"):
+    """Отображение результатов поиска"""
+    st.subheader("🔍 Результаты поиска")
+    
+    if not results["google_play"] and not results["app_store"]:
+        st.warning("Приложения не найдены")
+        return
+    
+    # Google Play
+    if results["google_play"]:
+        st.markdown("### Google Play")
+        for i, app in enumerate(results["google_play"], 1):
+            with st.expander(f"{i}. {app['title']}"):
                 st.write(f"**Разработчик:** {app['developer']}")
                 st.write(f"**Рейтинг:** {app['score']:.1f} ★")
                 st.write(f"**Ссылка:** {app['url']}")
-                if st.button(f"Выбрать", key=f"ios_{app['id']}"):
-                    st.session_state.selected_ios_app = app
-
+                if st.button(f"Выбрать", key=f"gp_{app['id']}"):
+                    st.session_state.selected_gp_app = app
     
     # App Store
     if results["app_store"]:
