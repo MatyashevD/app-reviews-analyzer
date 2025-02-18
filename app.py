@@ -182,18 +182,16 @@ def display_search_results(results: dict):
                 platform_color = "#4285f4" if app['platform'] == 'Google Play' else "#000000"
 
                 card_html = f"""
-                <div class="comparison-card {'selected-card' if is_selected else ''}">
-                    <div class="platform-tag" style="background:{platform_color}10;color:{platform_color}">
-                        {app['platform']}
-                    </div>
-                    <div class="card-title">{app['title']}</div>
-                    <div class="card-developer">{app['developer']}</div>
-                    <div style="margin-top:8px;">
-                        <span style="color:#ff9800;">★ {app['score']:.1f}</span>
-                        <span style="float:right;font-size:12px;color:#666">{app['match_score']}%</span>
-                    </div>
+            <div class="mobile-card {'selected-card' if is_selected else ''}">
+                <div class="app-title">{app['title']}</div>
+                <div class="developer">{app['developer']}</div>
+                <div class="rating-container">
+                    <span class="rating">★ {app['score']:.1f}</span>
+                    <span class="match-percent">{app['match_score']}% совпадение</span>
                 </div>
-                """
+                <div class="platform-tag">{app['platform']}</div>
+            </div>
+            """
                 
                 st.markdown(card_html, unsafe_allow_html=True)
                 
