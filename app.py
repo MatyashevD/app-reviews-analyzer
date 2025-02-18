@@ -3,7 +3,7 @@ import os
 import streamlit as st
 import requests
 import pandas as pd
-import openai
+from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import defaultdict, Counter
@@ -13,9 +13,8 @@ from itertools import groupby
 from typing import Optional
 from dotenv import load_dotenv
 
-# Загрузка API ключа
-load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Инициализация клиента в начале кода
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def load_nlp_model():
     try:
@@ -189,17 +188,20 @@ def get_reviews(app_id: str, platform: str,
 
 
 def analyze_with_ai(reviews_text: str):
-    """Анализ отзывов через OpenAI API (новый синтаксис)"""
+    """Анализ отзывов через OpenAI API"""
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4-1106-preview",
             messages=[{
                 "role": "system",
-                "content": """Сгенерируй анализ отзывов в формате:..."""  # Ваш промпт
+                "content": """Сгенерируй анализ отзывов в формате:
+                1. Основные проблемы (3-5 пунктов)
+                2. Распределение тональности (проценты)
+                3. Рекомендации по улучшению
+                
+                Используй маркдаун для оформления"""
             }, {
-                "role": "user", 
+                "role": "user",
                 "content": f"Отзывы:\n{reviews_text[:10000]}"
             }],
             temperature=0.3,
