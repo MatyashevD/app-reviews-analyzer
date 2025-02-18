@@ -46,6 +46,9 @@ def search_google_play_via_google(app_name: str) -> str:
 
         soup = BeautifulSoup(response.text, 'html.parser')
         
+        # Добавим вывод HTML-страницы для диагностики
+        print("HTML-страница от Google:", soup.prettify())  # Выводим отформатированную страницу
+
         # Ищем ссылку на Google Play в результатах
         link = None
         for result in soup.find_all('a', href=True):
