@@ -430,42 +430,60 @@ def main():
         display_search_results(st.session_state.search_results)
 
         
-        # Блок анализа (полностью аналогичный поисковой панели)
+        # Блок анализа с идеальным выравниванием
 if selected_count == 2:
     with st.container():
-        # Используем те же пропорции колонок [4, 1] как в поиске
-        cols = st.columns([3.2, 3.2, 2.6, 1])  # 4 колонки с оригинальным соотношением
+        st.markdown("""
+        <style>
+            /* Кастомные стили для выравнивания */
+            div[data-testid="stHorizontalBlock"] {
+                align-items: end !important;
+            }
+            .stDateInput > div {
+                padding-bottom: 0 !important;
+            }
+            button[data-testid="baseButton-primary"] {
+                margin-top: 29px !important;
+                height: 38px !important;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+
+        # Создаем 3 колонки с теми же пропорциями, что и в поисковой панели
+        col1, col2, col3 = st.columns([3.5, 3.5, 2])
         
-        # Начальная дата
-        with cols[0]:
+        # Поле начальной даты
+        with col1:
             start_date = st.date_input(
                 "Начальная дата",
                 datetime.date.today() - datetime.timedelta(days=30),
-                key='anal_start_date'
+                key='start_date_unique'
             )
         
-        # Конечная дата
-        with cols[1]:
+        # Поле конечной даты
+        with col2:
             end_date = st.date_input(
                 "Конечная дата",
                 datetime.date.today(),
-                key='anal_end_date'
+                key='end_date_unique'
             )
         
-        # Кнопка анализа (аналогия с кнопкой поиска)
-        with cols[3]:
+        # Кнопка анализа
+        with col3:
             st.write("")  # Критически важный вертикальный отступ
             if st.button(
                 "🚀 Запустить анализ",
                 use_container_width=True,
                 type="primary",
-                key='anal_launch_btn'
+                key='analyze_btn_unique'
             ):
-                # Логика обработки анализа
+                # Ваш код обработки анализа
     
     # Отображение результатов анализа
     if 'analysis_data' in st.session_state:
         display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
+
+        st.markdown("---")
 
 if __name__ == "__main__":
     main()
