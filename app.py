@@ -4,6 +4,8 @@ import streamlit as st
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
+from fuzzywuzzy import fuzz
+from itertools import groupby
 from google_play_scraper import search, app, reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import defaultdict, Counter
