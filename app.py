@@ -100,21 +100,56 @@ def display_search_results(results: dict):
     <style>
         .mobile-card {
             border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 8px;
-            margin: 6px 0;
+            border-radius: 12px;
+            padding: 12px;
+            margin: 8px 0;
             background: white;
             cursor: pointer;
             transition: all 0.2s;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
-        .selected-card { border: 2px solid #4CAF50; background: #f8fff8; }
-        .app-title { font-size: 14px; font-weight: 600; color: #1a1a1a; }
-        .meta-info { display: flex; justify-content: space-between; margin-top: 8px; }
-        .rating { color: #ff9800; font-weight: 500; }
-        .platform-tag { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
+        .selected-card { 
+            border: 2px solid #4CAF50; 
+            background: #f8fff8;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .app-title { 
+            font-size: 16px; 
+            font-weight: 600; 
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+        .meta-info { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        .rating { 
+            color: #ff9800; 
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .platform-tag { 
+            background: #e3f2fd; 
+            color: #1976d2;
+            padding: 4px 8px; 
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .select-button {
+            width: 100%;
+            margin-top: 8px;
+        }
     </style>
     """, unsafe_allow_html=True)
-
+    
     if not results["google_play"] and not results["app_store"]:
         st.warning("Приложения не найдены")
         return
@@ -128,31 +163,35 @@ def display_search_results(results: dict):
             st.session_state.selected_ios_app and app['id'] == st.session_state.selected_ios_app['id']
         ])
         
+        platform_color = {
+            'Google Play': '#4285F4',
+            'App Store': '#FF2D55'
+        }.get(app['platform'], '#666')
+
         card_html = f"""
         <div class="mobile-card {'selected-card' if is_selected else ''}">
             <div class="app-title">{app['title']}</div>
             <div class="meta-info">
-                <div>
-                    <span class="rating">★ {app['score']:.1f}</span>
-                    <span style="color:#666;font-size:12px">{app['match_score']}%</span>
+                <div class="rating">
+                    <span>★ {app['score']:.1f}</span>
+                    <span style="color:#666;font-size:12px">• {app['match_score']}% совпадение</span>
                 </div>
-                <div class="platform-tag">{app['platform']}</div>
+                <div class="platform-tag" style="background: {platform_color}10; color: {platform_color}">
+                    {app['platform']}
+                </div>
             </div>
         </div>
         """
         st.markdown(card_html, unsafe_allow_html=True)
         
+        btn_label = "✓ Выбрано" if is_selected else "Выбрать"
         if st.button(
-            "✓" if is_selected else " ",
+            btn_label,
             key=f"select_{app['id']}",
             type="primary" if is_selected else "secondary",
-            use_container_width=True
+            use_container_width=True,
+            help=f"Выбрать приложение {app['title']}"
         ):
-            if app['platform'] == 'Google Play':
-                st.session_state.selected_gp_app = app if not is_selected else None
-            else:
-                st.session_state.selected_ios_app = app if not is_selected else None
-            st.rerun()
 
 def get_reviews(app_id: str, platform: str, 
                 start_date: Optional[datetime.date] = None, 
