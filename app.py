@@ -3,17 +3,18 @@ import os
 import streamlit as st
 import requests
 import pandas as pd
+import spacy
 from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import defaultdict, Counter
-import spacy
 from fuzzywuzzy import fuzz
 from itertools import groupby
 from typing import Optional
 from dotenv import load_dotenv
 
-# Инициализация клиента в начале кода
+# Загрузка API ключа
+load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def load_nlp_model():
