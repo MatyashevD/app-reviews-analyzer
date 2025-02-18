@@ -93,125 +93,146 @@ def search_apps(query: str):
     return results
 
 def display_search_results(results: dict):
-    """Современный UI для отображения результатов поиска"""
+    """Современный UI с компактными карточками и умным скрытием"""
     st.subheader("🔍 Результаты поиска", divider="rainbow")
     
     if not results["google_play"] and not results["app_store"]:
         st.warning("Приложения не найдены")
         return
-    
-    # Объединение и сортировка результатов
+
+    # Объединение результатов
     all_results = results["google_play"] + results["app_store"]
     all_results.sort(key=lambda x: (-x['match_score'], -x['score']))
 
-    # Стили для карточек
+    # Проверка выбранных элементов
+    selected_ids = {
+        'Google Play': st.session_state.selected_gp_app['id'] if st.session_state.selected_gp_app else None,
+        'App Store': st.session_state.selected_ios_app['id'] if st.session_state.selected_ios_app else None
+    }
+
+    # Фильтрация результатов при наличии выбора
+    if any(selected_ids.values()):
+        all_results = [app for app in all_results if app['id'] in selected_ids.values()]
+        expander_label = "Показать все результаты"
+    else:
+        expander_label = "Скрыть результаты"
+
+    # Стили для компактных карточек
     st.markdown("""
     <style>
-        .app-card {
+        .compact-card {
             border: 1px solid #e0e0e0;
-            border-radius: 16px;
-            padding: 20px;
-            margin: 12px 0;
-            transition: transform 0.2s, box-shadow 0.2s;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 6px 0;
+            transition: all 0.2s;
             background: white;
             cursor: pointer;
         }
-        .app-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        .compact-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        .app-header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 12px;
-        }
-        .app-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1a1a1a;
-            line-height: 1.2;
-        }
-        .app-developer {
-            font-size: 14px;
-            color: #666;
-            margin-top: 4px;
-        }
-        .app-meta {
+        .compact-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 12px;
         }
-        .platform-tag {
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
+        .compact-title {
+            font-size: 14px;
             font-weight: 500;
-            text-transform: uppercase;
+            color: #1a1a1a;
+            line-height: 1.3;
+        }
+        .compact-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .compact-rating {
+            font-size: 13px;
+            color: #ff9800;
+        }
+        .compact-platform {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #f0f0f0;
         }
         .selected-card {
-            border: 2px solid #4CAF50;
+            border-color: #4CAF50;
             background: #f8fff8;
         }
     </style>
     """, unsafe_allow_html=True)
 
-    # Отображение карточек
-    cols = st.columns(2)
-    col_index = 0
-    
-    for app in all_results:
-        with cols[col_index]:
-            is_selected = (
-                (app['platform'] == 'Google Play' and 
-                 st.session_state.selected_gp_app and 
-                 st.session_state.selected_gp_app['id'] == app['id']) or
-                (app['platform'] == 'App Store' and 
-                 st.session_state.selected_ios_app and 
-                 st.session_state.selected_ios_app['id'] == app['id'])
-            )
-            
-            platform_color = "#4285f4" if app['platform'] == 'Google Play' else "#000000"
-            
-            card_html = f"""
-            <div class="app-card {'selected-card' if is_selected else ''}">
-                <div class="app-header">
-                    <div style="flex-grow:1;">
-                        <div class="app-title">{app['title']}</div>
-                        <div class="app-developer">{app['developer']}</div>
-                    </div>
-                    <div class="platform-tag" style="background:{platform_color}10;color:{platform_color};">
-                        {app['platform']}
-                    </div>
-                </div>
-                <div class="app-meta">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="font-size: 24px; color: #ff9800;">★</div>
-                        <div style="font-weight: 500;">{app['score']:.1f}</div>
-                    </div>
-                    <div style="color: #666; font-size: 14px;">
-                        Совпадение: {app['match_score']}%
-                    </div>
-                </div>
-            </div>
-            """
-            
-            st.markdown(card_html, unsafe_allow_html=True)
-            
-            if st.button(
-                "Выбрать",
-                key=f"select_{app['id']}",
-                type="primary" if is_selected else "secondary",
-                use_container_width=True
-            ):
-                if app['platform'] == 'Google Play':
-                    st.session_state.selected_gp_app = app
-                else:
-                    st.session_state.selected_ios_app = app
-                st.rerun()
+    # Кнопка управления отображением
+    with st.expander(expander_label, expanded=not any(selected_ids.values())):
+        # Отображение карточек в 3 колонки
+        cols = st.columns(3)
+        col_index = 0
         
-        col_index = (col_index + 1) % 2
+        for app in all_results:
+            with cols[col_index]:
+                is_selected = app['id'] in selected_ids.values()
+                platform_color = "#4285f4" if app['platform'] == 'Google Play' else "#000000"
+                
+                card_html = f"""
+                <div class="compact-card {'selected-card' if is_selected else ''}">
+                    <div class="compact-header">
+                        <div class="compact-title">{app['title']}</div>
+                        <div class="compact-platform" style="background:{platform_color}10;color:{platform_color}">
+                            {app['platform'][0]}
+                        </div>
+                    </div>
+                    <div class="compact-meta">
+                        <div class="compact-rating">★ {app['score']:.1f}</div>
+                        <div style="font-size:12px;color:#666">{app['developer'][:15]}{'...' if len(app['developer']) > 15 else ''}</div>
+                    </div>
+                </div>
+                """
+                
+                st.markdown(card_html, unsafe_allow_html=True)
+                
+                # Обработка выбора
+                if st.button(
+                    "✓ Выбрано" if is_selected else "Выбрать",
+                    key=f"select_{app['id']}",
+                    type="primary" if is_selected else "secondary",
+                    use_container_width=True
+                ):
+                    if app['platform'] == 'Google Play':
+                        if st.session_state.selected_gp_app and st.session_state.selected_gp_app['id'] == app['id']:
+                            st.session_state.selected_gp_app = None
+                        else:
+                            st.session_state.selected_gp_app = app
+                    else:
+                        if st.session_state.selected_ios_app and st.session_state.selected_ios_app['id'] == app['id']:
+                            st.session_state.selected_ios_app = None
+                        else:
+                            st.session_state.selected_ios_app = app
+                    st.rerun()
+            
+            col_index = (col_index + 1) % 3
+
+    # Панель выбранных приложений
+    if any(selected_ids.values()):
+        st.markdown("---")
+        with st.container():
+            st.subheader("✅ Выбранные приложения")
+            sel_cols = st.columns([3,1])
+            with sel_cols[0]:
+                for app in all_results:
+                    if app['id'] in selected_ids.values():
+                        st.markdown(f"""
+                        - **{app['title']}** ({app['platform']})  
+                        Рейтинг: ★ {app['score']:.1f} | Совпадение: {app['match_score']}%
+                        """)
+            with sel_cols[1]:
+                if st.button("Очистить выбор", use_container_width=True):
+                    st.session_state.selected_gp_app = None
+                    st.session_state.selected_ios_app = None
+                    st.rerun()
 
 def get_reviews(app_id: str, platform: str, 
                 start_date: Optional[datetime.date] = None, 
