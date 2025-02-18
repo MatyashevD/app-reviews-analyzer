@@ -198,53 +198,133 @@ def analyze_reviews(filtered_reviews: list):
     return analysis
 
 def display_analysis(analysis: dict, filtered_reviews: list):
-    """Отображение результатов анализа"""
     st.header("📊 Результаты анализа")
     
-    # Основные метрики
-    cols = st.columns(3)
-    cols[0].metric("Всего отзывов", analysis['total_reviews'])
-    cols[1].metric("Google Play", analysis['platform_counts']['Google Play'])
-    cols[2].metric("App Store", analysis['platform_counts']['App Store'])
+    # Сохраняем состояние
+    st.session_state.analysis_data = analysis
+    st.session_state.filtered_reviews = filtered_reviews
     
-    # Выбор периода дат
-    st.subheader("📅 Выбор периода анализа")
-    default_end = datetime.date.today()
-    default_start = default_end - datetime.timedelta(days=30)
-    start_date = st.date_input("Начальная дата", default_start)
-    end_date = st.date_input("Конечная дата", default_end)
+    tab1, tab2 = st.tabs(["Аналитика", "Все отзывы"])
     
-    # Фильтрация по дате
-    filtered = [
-        r for r in filtered_reviews
-        if start_date <= r[0].date() <= end_date
-    ]
-    
-    st.write(f"Отзывов за период: {len(filtered)}")
-    
-    # Ключевые фразы
-    st.subheader("🔑 Топ-15 ключевых фраз")
-    if analysis['key_phrases']:
-        phrases_df = pd.DataFrame(
-            analysis['key_phrases'].most_common(15),
-            columns=['Фраза', 'Упоминания']
+    with tab1:
+        cols = st.columns(3)
+        cols[0].metric("Всего отзывов", len(filtered_reviews))
+        cols[1].metric(
+            "Google Play", 
+            f"{analysis['platform_counts']['Google Play']} отзывов",
+            f"★ {analysis['gp_rating']:.1f}" if analysis['gp_rating'] > 0 else ""
         )
+        cols[2].metric(
+            "App Store", 
+            f"{analysis['platform_counts']['App Store']} отзывов",
+            f"★ {analysis['ios_rating']:.1f}" if analysis['ios_rating'] > 0 else ""
+        )
+        
+        st.subheader("📈 Распределение тональности")
+        sentiment_counts = {
+            'Позитивные': sum(1 for s in analysis['sentiments'] if s['label'].lower() == 'positive'),
+            'Нейтральные': sum(1 for s in analysis['sentiments'] if s['label'].lower() == 'neutral'),
+            'Негативные': sum(1 for s in analysis['sentiments'] if s['label'].lower() == 'negative')
+        }
+
+        if sum(sentiment_counts.values()) > 0:
+            sentiment_df = pd.DataFrame.from_dict(sentiment_counts, orient='index', columns=['Количество'])
+            st.bar_chart(sentiment_df)
+        else:
+            st.warning("Нет данных для отображения тональности")
+        
+        st.subheader("🔑 Ключевые темы (Топ-15)")
+        if analysis['key_phrases']:
+            top_phrases = analysis['key_phrases'].most_common(15)
+            
+            st.markdown("""
+            <style>
+                .phrase-box {
+                    border: 1px solid #e6e6e6;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin: 10px 0;
+                    background: #f9f9f9;
+                }
+                .phrase-text {
+                    font-weight: 600;
+                    color: #2c3e50;
+                    font-size: 16px;
+                }
+                .phrase-count {
+                    color: #3498db;
+                    font-size: 14px;
+                }
+                .phrase-example {
+                    color: #7f8c8d;
+                    font-size: 14px;
+                    margin-top: 8px;
+                }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            for phrase, count in top_phrases:
+                examples = analysis['examples'].get(phrase, [])[:2]
+                examples_html = "<br>".join([f"• {ex}" for ex in examples])
+                
+                st.markdown(f"""
+                <div class="phrase-box">
+                    <div class="phrase-text">
+                        {phrase} 
+                        <span class="phrase-count">({count} упоминаний)</span>
+                    </div>
+                    <div class="phrase-example">
+                        Примеры:<br>
+                        {examples_html if examples else "Нет примеров"}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("Ключевые темы не обнаружены")
+    
+    with tab2:
+        st.subheader("📋 Все отзывы")
+        sentiment_translation = {
+            'positive': 'Позитивный',
+            'neutral': 'Нейтральный',
+            'negative': 'Негативный'
+        }
+        
+        reviews_df = pd.DataFrame([{
+            'Дата': r[0].strftime('%Y-%m-%d'),
+            'Платформа': r[2],
+            'Оценка': '★' * int(r[3]),
+            'Оценка (баллы)': r[3],
+            'Отзыв': r[1],
+            'Тональность': sentiment_translation.get(s['label'].lower(), 'Нейтральный')
+        } for i, (r, s) in enumerate(zip(filtered_reviews, analysis['sentiments']))])
+        
         st.dataframe(
-            phrases_df.style.background_gradient(subset=['Упоминания'], cmap='Blues'),
-            height=400
+            reviews_df[['Дата', 'Платформа', 'Оценка', 'Тональность', 'Отзыв']],
+            height=600,
+            column_config={
+                "Оценка": st.column_config.TextColumn(width="small"),
+                "Отзыв": st.column_config.TextColumn(width="large")
+            }
         )
-    else:
-        st.info("Ключевые фразы не обнаружены")
+        
+        csv = reviews_df[['Дата', 'Платформа', 'Оценка (баллы)', 'Тональность', 'Отзыв']]
+        csv = csv.to_csv(index=False).encode('utf-8')
+        
+        if st.download_button(
+            label="📥 Скачать все отзывы",
+            data=csv,
+            file_name='отзывы.csv',
+            mime='text/csv',
+            key='download_btn'
+        ):
+            st.session_state.analysis_data = analysis
+            st.session_state.filtered_reviews = filtered_reviews
+            st.experimental_rerun()
     
-    # Примеры отзывов
-    st.subheader("📋 Последние отзывы")
-    reviews_df = pd.DataFrame([{
-        'Дата': r[0].strftime('%Y-%m-%d'),
-        'Платформа': r[2],
-        'Оценка': '★' * int(r[3]),
-        'Текст': r[1][:150] + '...'
-    } for r in filtered[:20]])
-    st.dataframe(reviews_df, height=500)
+    if st.button("🔄 Новый анализ", type="secondary"):
+        st.session_state.clear()
+        st.experimental_rerun()
 
 def main():
     st.set_page_config(
