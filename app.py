@@ -429,47 +429,6 @@ def main():
     if 'search_results' in st.session_state and selected_count < 2:
         display_search_results(st.session_state.search_results)
 
-    # Блок анализа
-if selected_count == 2:
-    with st.container():
-        st.markdown("""
-        <style>
-            .date-row {
-                display: flex;
-                align-items: flex-end;
-                gap: 20px;
-                margin-bottom: 1rem;
-            }
-            .date-picker {
-                flex: 1;
-            }
-            .analyze-btn {
-                margin-top: 28px !important;
-            }
-        </style>
-        """, unsafe_allow_html=True)
-
-        st.markdown('<div class="date-row">', unsafe_allow_html=True)
-        
-        # Начальная дата
-        with st.container():
-            st.markdown('<div class="date-picker">', unsafe_allow_html=True)
-            start_date = st.date_input(
-                "Начальная дата",
-                datetime.date.today() - datetime.timedelta(days=30),
-                key='start_date'
-            )
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Конечная дата
-        with st.container():
-            st.markdown('<div class="date-picker">', unsafe_allow_html=True)
-            end_date = st.date_input(
-                "Конечная дата",
-                datetime.date.today(),
-                key='end_date'
-            )
-            st.markdown('</div>', unsafe_allow_html=True)
         
         # Блок анализа (полностью аналогичный поисковой панели)
 if selected_count == 2:
