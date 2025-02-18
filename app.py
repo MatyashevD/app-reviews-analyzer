@@ -20,7 +20,7 @@ def load_nlp_model():
 nlp = load_nlp_model()
 
 # Настройки поиска
-MAX_RESULTS = 10
+MAX_RESULTS = 5
 DEFAULT_LANG = 'ru'
 DEFAULT_COUNTRY = 'ru'
 
