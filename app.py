@@ -29,12 +29,21 @@ def load_sentiment_model():
         device=-1
     )
 
-def search_google_play(app_name: str) -> str:
+def search_google_play(app_name: str):
     try:
-        result = gp_app(app_name, lang='ru', country='ru')
-        return result['appId']
+        # Ищем приложение по названию
+        search_results = search(app_name, lang='en', country='us', count=1)
+        
+        if not search_results:
+            print("Приложение не найдено.")
+            return None
+
+        # Получаем ID приложения (appId)
+        app_id = search_results[0]['appId']
+        print(f"Найдено приложение: {app_id}")
+        return app_id
     except Exception as e:
-        st.error(f"Ошибка поиска Google Play: {str(e)}")
+        print(f"Ошибка при поиске приложения: {str(e)}")
         return None
 
 def search_app_store(app_name: str) -> str:
