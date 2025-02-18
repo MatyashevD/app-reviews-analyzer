@@ -432,7 +432,7 @@ def main():
         
     # Блок анализа
     if selected_count == 2:
-       with st.container():
+        with st.container():
          st.markdown("""
         <style>
             /* Жесткое выравнивание элементов */
@@ -449,7 +449,7 @@ def main():
         </style>
         """, unsafe_allow_html=True)
 
-        cols = st.columns([3.5, 3.5, 2])  # Соотношение как в поисковой панели
+         cols = st.columns([3.5, 3.5, 2])  # Соотношение как в поисковой панели
         
         # Поля дат
         with cols[0]:
