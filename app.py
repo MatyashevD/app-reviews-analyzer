@@ -32,7 +32,7 @@ def load_sentiment_model():
 def search_google_play(app_name: str):
     try:
         # Ищем приложение по названию
-        search_results = search(app_name, lang='en', country='us', count=1)
+        search_results = search(app_name, lang='ru', country='ru', count=1)
         
         if not search_results:
             print("Приложение не найдено.")
