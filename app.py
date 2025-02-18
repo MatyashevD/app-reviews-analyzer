@@ -3,13 +3,12 @@ import re
 import streamlit as st
 import requests
 import pandas as pd
-from bs4 import BeautifulSoup
-from fuzzywuzzy import fuzz
-from itertools import groupby
 from google_play_scraper import search, app, reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import defaultdict, Counter
 import spacy
+from fuzzywuzzy import fuzz
+from itertools import groupby
 
 # Инициализация NLP модели
 def load_nlp_model():
@@ -27,7 +26,7 @@ DEFAULT_LANG = 'ru'
 DEFAULT_COUNTRY = 'ru'
 
 def search_apps(query: str):
-    """Поиск приложений по названию"""
+    """Улучшенный поиск приложений с нечетким соответствием"""
     results = {"google_play": [], "app_store": []}
     
     try:
@@ -55,29 +54,27 @@ def search_apps(query: str):
             "https://itunes.apple.com/search",
             params={
                 "term": query,
-                "country": "RU",
+                "country": DEFAULT_COUNTRY,
                 "media": "software",
                 "limit": 20,
                 "entity": "software,iPadSoftware",
                 "lang": "ru_ru"
             },
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+            headers={"User-Agent": "Mozilla/5.0"}
         )
         ios_data = itunes_response.json()
         
-        # Группировка по названию приложения
+        # Обработка результатов с нечетким поиском
         sorted_results = sorted(ios_data.get("results", []), 
                               key=lambda x: x['trackName'])
         grouped = groupby(sorted_results, key=lambda x: x['trackName'])
         
-        # Фильтрация и выбор лучшего совпадения
         processed = []
         for name, group in grouped:
             best_match = max(group, 
                            key=lambda x: fuzz.token_set_ratio(query, x['trackName']))
             processed.append(best_match)
 
-        # Сортировка по релевантности
         processed.sort(key=lambda x: fuzz.token_set_ratio(query, x['trackName']), 
                       reverse=True)
         
@@ -88,13 +85,12 @@ def search_apps(query: str):
             "score": r.get("averageUserRating", 0),
             "url": r["trackViewUrl"],
             "match_score": fuzz.token_set_ratio(query, r['trackName'])
-        } for r in processed if r['match_score'] > 65][:5]
+        } for r in processed if r.get('averageUserRating', 0) > 0][:MAX_RESULTS]
         
     except Exception as e:
         st.error(f"Ошибка поиска в App Store: {str(e)}")
     
     return results
-
 
 def display_search_results(results: dict):
     """Отображение результатов поиска"""
@@ -104,7 +100,6 @@ def display_search_results(results: dict):
         st.warning("Приложения не найдены")
         return
     
-    # Google Play
     if results["google_play"]:
         st.markdown("### Google Play")
         for i, app in enumerate(results["google_play"], 1):
@@ -114,9 +109,9 @@ def display_search_results(results: dict):
                 st.write(f"**Ссылка:** {app['url']}")
                 if st.button(f"Выбрать", key=f"gp_{app['id']}"):
                     st.session_state.selected_gp_app = app
-    # App Store
+    
     if results["app_store"]:
-        st.markdown("### App Store (лучшие совпадения)")
+        st.markdown("### App Store")
         for i, app in enumerate(results["app_store"], 1):
             with st.expander(f"{i}. {app['title']} ({app['match_score']}% совпадение)"):
                 st.write(f"**Разработчик:** {app['developer']}")
@@ -126,7 +121,7 @@ def display_search_results(results: dict):
                     st.session_state.selected_ios_app = app
 
 def get_reviews(app_id: str, platform: str):
-    """Получение отзывов для выбранного приложения"""
+    """Получение отзывов с обработкой ошибок"""
     try:
         if platform == 'google_play':
             result, _ = gp_reviews(
@@ -141,7 +136,7 @@ def get_reviews(app_id: str, platform: str):
             app_store_app = AppStore(
                 country=DEFAULT_COUNTRY, 
                 app_id=app_id, 
-                app_name=st.session_state[f"selected_{platform}_app"]['title']
+                app_name=st.session_state.selected_ios_app['title']
             )
             app_store_app.review(how_many=100)
             return [(r['date'], r['review'], 'App Store', r['rating']) for r in app_store_app.reviews]
@@ -149,25 +144,56 @@ def get_reviews(app_id: str, platform: str):
         st.error(f"Ошибка получения отзывов: {str(e)}")
         return []
 
+def extract_key_phrases(text: str) -> list:
+    """Улучшенное извлечение фраз для русского языка"""
+    try:
+        doc = nlp(text)
+        phrases = []
+        current_phrase = []
+        
+        for token in doc:
+            if token.pos_ in ['NOUN', 'PROPN', 'ADJ'] and not token.is_stop:
+                current_phrase.append(token.text)
+                if len(current_phrase) == 3:
+                    phrases.append(' '.join(current_phrase))
+                    current_phrase = []
+            else:
+                if current_phrase:
+                    phrases.append(' '.join(current_phrase))
+                    current_phrase = []
+        
+        if current_phrase:
+            phrases.append(' '.join(current_phrase))
+        
+        # Фильтрация результатов
+        return [
+            phrase.strip().lower()
+            for phrase in phrases
+            if 2 <= len(phrase.split()) <= 3
+            and len(phrase) > 4
+        ]
+    except Exception as e:
+        st.error(f"Ошибка обработки текста: {str(e)}")
+        return []
+
 def analyze_reviews(filtered_reviews: list):
-    """Анализ отзывов с использованием NLP"""
+    """Анализ отзывов с улучшенной обработкой"""
     analysis = {
         'sentiments': [],
         'key_phrases': Counter(),
         'platform_counts': Counter(),
-        'examples': defaultdict(list)
+        'examples': defaultdict(list),
+        'total_reviews': len(filtered_reviews)
     }
     
     for idx, (date, text, platform, rating) in enumerate(filtered_reviews):
         analysis['platform_counts'][platform] += 1
         
-        # Извлечение ключевых фраз
-        doc = nlp(text)
-        phrases = [chunk.text for chunk in doc.noun_chunks if 2 <= len(chunk.text.split()) <= 4]
+        phrases = extract_key_phrases(text)
         for phrase in phrases:
             analysis['key_phrases'][phrase] += 1
             if len(analysis['examples'][phrase]) < 3:
-                analysis['examples'][phrase].append(text[:150] + '...')
+                analysis['examples'][phrase].append(text[:100] + '...')
     
     return analysis
 
@@ -176,24 +202,39 @@ def display_analysis(analysis: dict, filtered_reviews: list):
     st.header("📊 Результаты анализа")
     
     # Основные метрики
-    cols = st.columns(2)
-    cols[0].metric("Всего отзывов", len(filtered_reviews))
-    cols[1].metric("Платформы", 
-                  f"Google Play: {analysis['platform_counts']['Google Play']} | App Store: {analysis['platform_counts']['App Store']}")
+    cols = st.columns(3)
+    cols[0].metric("Всего отзывов", analysis['total_reviews'])
+    cols[1].metric("Google Play", analysis['platform_counts']['Google Play'])
+    cols[2].metric("App Store", analysis['platform_counts']['App Store'])
+    
+    # Выбор периода дат
+    st.subheader("📅 Выбор периода анализа")
+    default_end = datetime.date.today()
+    default_start = default_end - datetime.timedelta(days=30)
+    start_date = st.date_input("Начальная дата", default_start)
+    end_date = st.date_input("Конечная дата", default_end)
+    
+    # Фильтрация по дате
+    filtered = [
+        r for r in filtered_reviews
+        if start_date <= r[0].date() <= end_date
+    ]
+    
+    st.write(f"Отзывов за период: {len(filtered)}")
     
     # Ключевые фразы
-    st.subheader("🔑 Ключевые темы")
+    st.subheader("🔑 Топ-15 ключевых фраз")
     if analysis['key_phrases']:
         phrases_df = pd.DataFrame(
             analysis['key_phrases'].most_common(15),
-            columns=['Фраза', 'Количество']
+            columns=['Фраза', 'Упоминания']
         )
         st.dataframe(
-            phrases_df.style.background_gradient(subset=['Количество'], cmap='Blues'),
+            phrases_df.style.background_gradient(subset=['Упоминания'], cmap='Blues'),
             height=400
         )
     else:
-        st.info("Ключевые темы не обнаружены")
+        st.info("Ключевые фразы не обнаружены")
     
     # Примеры отзывов
     st.subheader("📋 Последние отзывы")
@@ -201,35 +242,36 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         'Дата': r[0].strftime('%Y-%m-%d'),
         'Платформа': r[2],
         'Оценка': '★' * int(r[3]),
-        'Текст': r[1]
-    } for r in filtered_reviews[:10]])
+        'Текст': r[1][:150] + '...'
+    } for r in filtered[:20]])
     st.dataframe(reviews_df, height=500)
 
 def main():
     st.set_page_config(
         page_title="Анализатор приложений",
         layout="wide",
-        menu_items={'About': "### Анализатор мобильных приложений v3.0"}
+        menu_items={'About': "### Анализатор мобильных приложений v4.0"}
     )
     st.title("📱 Анализатор мобильных приложений")
-    
-    # Поисковая строка
-    search_query = st.text_input(
-        "Введите название приложения:",
-        placeholder="Например: ВКонтакте, СберБанк",
-        key="search_input"
-    )
     
     # Инициализация состояния
     session_defaults = {
         'search_results': None,
         'selected_gp_app': None,
         'selected_ios_app': None,
-        'analysis_data': None
+        'analysis_data': None,
+        'filtered_reviews': []
     }
     for key, value in session_defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+    
+    # Поисковая строка
+    search_query = st.text_input(
+        "Введите название приложения:",
+        placeholder="Например: СберБанк, Авито",
+        key="search_input"
+    )
     
     # Кнопка поиска
     if st.button("🔎 Найти приложения", type="primary"):
@@ -243,7 +285,7 @@ def main():
     if st.session_state.search_results:
         display_search_results(st.session_state.search_results)
     
-    # Отображение выбранных приложений
+    # Управление выбором приложений
     selected_apps = []
     if st.session_state.selected_gp_app:
         selected_apps.append(f"Google Play: {st.session_state.selected_gp_app['title']}")
@@ -255,9 +297,9 @@ def main():
     
     # Кнопка анализа
     if selected_apps and st.button("🚀 Начать анализ отзывов", type="primary"):
-        all_reviews = []
-        
-        with st.spinner("Сбор отзывов..."):
+        with st.spinner("Сбор данных..."):
+            all_reviews = []
+            
             if st.session_state.selected_gp_app:
                 gp_revs = get_reviews(
                     st.session_state.selected_gp_app['id'], 
@@ -276,23 +318,21 @@ def main():
                 st.error("Не удалось получить отзывы")
                 return
             
-            # Фильтрация по дате
-            start_date = datetime.datetime.now() - datetime.timedelta(days=30)
-            end_date = datetime.datetime.now()
-            filtered_reviews = [
-                r for r in all_reviews 
-                if start_date <= r[0] <= end_date
-            ]
+            st.session_state.filtered_reviews = sorted(
+                all_reviews,
+                key=lambda x: x[0],
+                reverse=True
+            )
             
             with st.spinner("Анализ текста..."):
-                analysis = analyze_reviews(filtered_reviews)
-                st.session_state.analysis_data = analysis
-        
-        if st.session_state.analysis_data:
-            display_analysis(
-                st.session_state.analysis_data, 
-                filtered_reviews
-            )
+                st.session_state.analysis_data = analyze_reviews(st.session_state.filtered_reviews)
+    
+    # Отображение результатов
+    if st.session_state.analysis_data and st.session_state.filtered_reviews:
+        display_analysis(
+            st.session_state.analysis_data,
+            st.session_state.filtered_reviews
+        )
 
 if __name__ == "__main__":
     main()
