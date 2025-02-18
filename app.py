@@ -30,28 +30,37 @@ def load_sentiment_model():
         device=-1
     )
 
-def search_google_play(app_name: str) -> str:
+def search_google_play_via_google(app_name: str) -> str:
     try:
-        # Кодируем название приложения для использования в URL
-        search_query = urllib.parse.quote(app_name)
-        search_url = f"https://play.google.com/store/search?q={search_query}&c=apps"
+        # Формируем URL для поискового запроса в Google
+        search_url = f"https://www.google.com/search?q={app_name}+site:play.google.com"
         
-        # Отправляем запрос на Google Play
-        response = requests.get(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+        # Отправляем GET-запрос в Google
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'
+        }
+        response = requests.get(search_url, headers=headers)
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Находим первый результат
-        app_link = soup.find('a', {'class': 'poRVub'})
-        if app_link:
-            app_id = app_link.get('href').split('id=')[1].split('&')[0]
-            app_url = f"https://play.google.com/store/apps/details?id={app_id}&hl=ru"
-            return app_url  # Возвращаем URL приложения на Google Play
+        # Ищем ссылку на Google Play в результатах
+        link = None
+        for result in soup.find_all('a', href=True):
+            if 'play.google.com' in result['href']:
+                link = result['href']
+                break
+        
+        if link:
+            # Извлекаем app_id из ссылки
+            app_id_match = re.search(r"id=([a-zA-Z0-9._-]+)", link)
+            if app_id_match:
+                return app_id_match.group(1)
+            else:
+                raise ValueError("Не удалось извлечь ID приложения.")
         else:
-            st.error("Приложение не найдено на Google Play.")
-            return None
+            raise ValueError("Приложение не найдено в поиске Google.")
+    
     except Exception as e:
-        st.error(f"Ошибка при поиске в Google Play: {str(e)}")
-        return None
+        return f"Ошибка при поиске в Google: {str(e)}"
 
 def search_app_store(app_name: str) -> str:
     try:
