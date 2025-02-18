@@ -430,10 +430,10 @@ def main():
         display_search_results(st.session_state.search_results)
 
         
-# Блок анализа
+    # Блок анализа
     
-if selected_count == 2:
-     with st.container():
+    if selected_count == 2:
+       with st.container():
         st.markdown("""
         <style>
             /* Жесткое выравнивание элементов */
