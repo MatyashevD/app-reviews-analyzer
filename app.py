@@ -103,7 +103,7 @@ def display_search_results(results: dict):
             padding: 6px 8px;
             margin: 4px 0;
             transition: all 0.2s;
-            background: white;
+            background: #F0F0F0;
             cursor: pointer;
             position: relative;
         }
