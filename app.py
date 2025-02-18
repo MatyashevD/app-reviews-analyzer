@@ -354,36 +354,24 @@ def main():
         st.session_state.app_name_gp = app_name_gp
         st.session_state.app_name_ios = app_name_ios
         
-        with st.spinner("Сбор отзывов..."):
-            gp_revs, gp_rating = get_google_play_reviews(app_name_gp)
-            ios_revs, ios_rating = get_app_store_reviews(app_name_ios)
-            all_reviews = gp_revs + ios_revs
+        with st.spinner("Пожалуйста, подождите..."):
+            reviews_gp, rating_gp = get_google_play_reviews(app_name_gp)
+            reviews_ios, rating_ios = get_app_store_reviews(app_name_ios)
             
-            if not all_reviews:
-                st.error("Отзывы не найдены!")
-                return
+            if reviews_gp or reviews_ios:
+                filtered_reviews = reviews_gp + reviews_ios
+                # Фильтрация отзывов по датам
+                start_datetime = datetime.datetime.combine(start_date, datetime.time.min)
+                end_datetime = datetime.datetime.combine(end_date, datetime.time.max)
+                filtered_reviews = filter_reviews_by_date(filtered_reviews, start_datetime, end_datetime)
                 
-            start_dt = datetime.datetime.combine(start_date, datetime.time.min)
-            end_dt = datetime.datetime.combine(end_date, datetime.time.max)
-            filtered_reviews = filter_reviews_by_date(all_reviews, start_dt, end_dt)
-            
-            with st.spinner("Анализ текста..."):
+                # Анализируем отзывы
                 analysis = analyze_reviews(filtered_reviews)
-                analysis.update({
-                    'gp_rating': gp_rating,
-                    'ios_rating': ios_rating,
-                    'platform_counts': {
-                        'Google Play': sum(1 for r in filtered_reviews if r[2] == 'Google Play'),
-                        'App Store': sum(1 for r in filtered_reviews if r[2] == 'App Store')
-                    }
-                })
-            
-            st.session_state.analysis_data = analysis
-            st.session_state.filtered_reviews = filtered_reviews
-            st.experimental_rerun()
-    
-    if 'analysis_data' in st.session_state and 'filtered_reviews' in st.session_state:
-        display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
+                
+                # Отображаем результаты
+                display_analysis(analysis, filtered_reviews)
+            else:
+                st.warning("Не удалось найти отзывы.")
 
 if __name__ == "__main__":
     main()
