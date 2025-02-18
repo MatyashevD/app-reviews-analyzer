@@ -477,8 +477,8 @@ def main():
                 key='analyze_btn'
             ):
      # Отображение результатов анализа
-    if 'analysis_data' in st.session_state:
-        display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
+if 'analysis_data' in st.session_state:
+    display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
 
 
 if __name__ == "__main__":
