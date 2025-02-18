@@ -344,7 +344,12 @@ def display_analysis(analysis: dict, filtered_reviews: list):
         st.download_button("📥 Скачать", reviews_df.to_csv(index=False), "отзывы.csv", "text/csv")
 
 def main():
-    st.set_page_config(page_title="Анализатор приложений", layout="wide", page_icon="📱")
+    st.set_page_config(
+        page_title="Анализатор приложений", 
+        layout="wide", 
+        page_icon="📱",
+        menu_items={'About': "### Анализ отзывов из магазинов приложений"}
+    )
     st.title("📱 Анализатор мобильных приложений")
     
     if 'selected_gp_app' not in st.session_state:
@@ -354,9 +359,16 @@ def main():
     
     with st.container():
         cols = st.columns([4, 1])
-        search_query = cols[0].text_input("Поиск приложений:", placeholder="Введите название...")
-        if cols[1].button("🔍 Найти", use_container_width=True) and len(search_query) >= 3:
-            st.session_state.search_results = search_apps(search_query)
+        search_query = cols[0].text_input(
+            "Поиск приложений:", 
+            placeholder="Введите название приложения...",
+            help="Например: 'Сбербанк' или 'TikTok'"
+        )
+        if cols[1].button("🔍 Начать поиск", use_container_width=True, type="primary"):
+            if len(search_query) >= 3:
+                st.session_state.search_results = search_apps(search_query)
+            else:
+                st.warning("⚠️ Введите минимум 3 символа для поиска")
     
     if 'search_results' in st.session_state:
         display_search_results(st.session_state.search_results)
