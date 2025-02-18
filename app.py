@@ -101,57 +101,59 @@ def display_search_results(results: dict):
         .mobile-card {
             border: 1px solid #e0e0e0;
             border-radius: 12px;
-            padding: 12px;
-            margin: 8px 0;
+            padding: 16px;
+            margin: 12px auto;
             background: white;
             cursor: pointer;
             transition: all 0.2s;
             max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .selected-card { 
-            border: 2px solid #4CAF50; 
+            border: 2px solid #4CAF50;
             background: #f8fff8;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(76,175,80,0.15);
         }
-        .app-title { 
-            font-size: 16px; 
-            font-weight: 600; 
+        .app-title {
+            font-size: 17px;
+            font-weight: 600;
             color: #1a1a1a;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
-        .meta-info { 
-            display: flex; 
-            justify-content: space-between; 
+        .developer {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .meta-info {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            margin-top: 8px;
             font-size: 14px;
         }
-        .rating { 
-            color: #ff9800; 
+        .rating {
+            color: #ff9800;
             font-weight: 500;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
         }
-        .platform-tag { 
-            background: #e3f2fd; 
-            color: #1976d2;
-            padding: 4px 8px; 
-            border-radius: 16px;
+        .platform-tag {
+            padding: 4px 12px;
+            border-radius: 20px;
             font-size: 12px;
             font-weight: 500;
+            text-transform: uppercase;
         }
-        .select-button {
-            width: 100%;
-            margin-top: 8px;
+        .match-score {
+            color: #666;
+            font-size: 12px;
         }
     </style>
     """, unsafe_allow_html=True)
-    
+
     if not results["google_play"] and not results["app_store"]:
-        st.warning("Приложения не найдены")
+        st.warning("😞 Приложения не найдены")
         return
 
     all_results = results["google_play"] + results["app_store"]
@@ -163,20 +165,21 @@ def display_search_results(results: dict):
             st.session_state.selected_ios_app and app['id'] == st.session_state.selected_ios_app['id']
         ])
         
-        platform_color = {
-            'Google Play': '#4285F4',
-            'App Store': '#FF2D55'
-        }.get(app['platform'], '#666')
+        platform_style = {
+            'Google Play': {'bg': '#e8f0fe', 'color': '#1967d2'},
+            'App Store': {'bg': '#fde8ef', 'color': '#ff2d55'}
+        }[app['platform']]
 
         card_html = f"""
         <div class="mobile-card {'selected-card' if is_selected else ''}">
             <div class="app-title">{app['title']}</div>
+            <div class="developer">{app['developer']}</div>
             <div class="meta-info">
                 <div class="rating">
-                    <span>★ {app['score']:.1f}</span>
-                    <span style="color:#666;font-size:12px">• {app['match_score']}% совпадение</span>
+                    ★ {app['score']:.1f}
+                    <span class="match-score">• {app['match_score']}% совпадение</span>
                 </div>
-                <div class="platform-tag" style="background: {platform_color}10; color: {platform_color}">
+                <div class="platform-tag" style="background: {platform_style['bg']}; color: {platform_style['color']};">
                     {app['platform']}
                 </div>
             </div>
@@ -184,14 +187,19 @@ def display_search_results(results: dict):
         """
         st.markdown(card_html, unsafe_allow_html=True)
         
-        btn_label = "✓ Выбрано" if is_selected else "Выбрать"
+        btn_label = "✅ Выбрано" if is_selected else "📱 Выбрать это приложение"
         if st.button(
             btn_label,
             key=f"select_{app['id']}",
             type="primary" if is_selected else "secondary",
             use_container_width=True,
-            help=f"Выбрать приложение {app['title']}"
+            help=f"Выбрать {app['title']} для анализа"
         ):
+            if app['platform'] == 'Google Play':
+                st.session_state.selected_gp_app = app if not is_selected else None
+            else:
+                st.session_state.selected_ios_app = app if not is_selected else None
+            st.rerun()
 
 def get_reviews(app_id: str, platform: str, 
                 start_date: Optional[datetime.date] = None, 
