@@ -152,6 +152,42 @@ def display_search_results(results: dict):
                 st.session_state.selected_ios_app = app if not is_selected else None
             st.rerun()
 
+def get_reviews(app_id: str, platform: str, 
+                start_date: Optional[datetime.date] = None, 
+                end_date: Optional[datetime.date] = None):
+    """Получение отзывов с фильтрацией по дате"""
+    try:
+        if platform == 'google_play':
+            result, _ = gp_reviews(
+                app_id,
+                lang=DEFAULT_LANG,
+                country=DEFAULT_COUNTRY,
+                count=1000,
+                sort=Sort.NEWEST
+            )
+            if start_date and end_date:
+                result = [r for r in result 
+                        if start_date <= r['at'].date() <= end_date]
+            return [(r['at'], r['content'], 'Google Play', r['score']) for r in result]
+        
+        elif platform == 'app_store':
+            app_store_app = AppStore(
+                country=DEFAULT_COUNTRY, 
+                app_id=app_id, 
+                app_name=st.session_state.selected_ios_app['title']
+            )
+            app_store_app.review(how_many=1000)
+            reviews = app_store_app.reviews
+            if start_date and end_date:
+                reviews = [r for r in reviews 
+                         if start_date <= r['date'].date() <= end_date]
+            return [(r['date'], r['review'], 'App Store', r['rating']) for r in reviews]
+    
+    except Exception as e:
+        st.error(f"Ошибка получения отзывов: {str(e)}")
+        return []
+
+
 def analyze_with_ai(reviews_text: str):
     try:
         response = openai.ChatCompletion.create(
