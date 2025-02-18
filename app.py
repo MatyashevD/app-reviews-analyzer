@@ -432,7 +432,7 @@ def main():
         
     # Блок анализа
     
-    if selected_count == 2:
+if selected_count == 2:
        with st.container():
         st.markdown("""
         <style>
