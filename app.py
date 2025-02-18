@@ -5,6 +5,7 @@ import requests
 import pandas as pd
 import spacy
 from openai import OpenAI
+client = OpenAI(api_key=st.secrets["openai_api_key"])
 from google_play_scraper import search, reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import defaultdict, Counter
@@ -13,9 +14,6 @@ from itertools import groupby
 from typing import Optional
 from dotenv import load_dotenv
 
-# Загрузка API ключа
-load_dotenv()
-client = OpenAI(api_key=st.secrets["openai_api_key"])
 
 def load_nlp_model():
     try:
