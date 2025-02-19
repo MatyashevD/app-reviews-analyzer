@@ -466,17 +466,6 @@ def main():
             
             # Блок кнопки с абсолютным позиционированием
             with main_cols[2]:
-                st.markdown("""
-                <style>
-                    .fixed-button {
-                        position: relative;
-                        top: 8px;
-                        width: 100%;
-                    }
-                </style>
-                """, unsafe_allow_html=True)
-                
-                st.markdown("<br>", unsafe_allow_html=True)
                 if st.button(
                     "🚀 Запустить анализ",
                     use_container_width=True,
