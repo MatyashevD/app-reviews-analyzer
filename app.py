@@ -363,7 +363,7 @@ def main():
             
             if analysis['ai_analysis']:
                 st.markdown("---")
-                st.subheader("🤖 ИИ Анализ")
+                st.subheader("🤖 AI Анализ")
                 st.markdown(analysis['ai_analysis'])
             else:
                 st.warning("AI-анализ недоступен. Проверьте API-ключ OpenAI")
