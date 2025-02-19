@@ -476,7 +476,7 @@ def main():
                 </style>
                 """, unsafe_allow_html=True)
                 
-                st.markdown('<div class="fixed-button">', unsafe_allow_html=True)
+                st.markdown("<br>", unsafe_allow_html=True)
                 if st.button(
                     "🚀 Запустить анализ",
                     use_container_width=True,
