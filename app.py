@@ -447,7 +447,7 @@ def main():
             """, unsafe_allow_html=True)
 
             # Создаем новый контейнер с чистой структурой
-            main_cols = st.columns([2, 1, 1])
+            main_cols = st.columns([4, 2, 2])
             
             # Блок дат
             with main_cols[0]:
