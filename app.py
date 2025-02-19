@@ -477,7 +477,9 @@ def main():
                 """, unsafe_allow_html=True)
                 
                 st.markdown('<div class="fixed-button">', unsafe_allow_html=True)
-                if st.button(
+                col_center = st.columns([3, 2, 3])
+                   with col_center[1]:
+                        if st.button(
                     "🚀 Запустить анализ",
                     use_container_width=True,
                     type="primary",
