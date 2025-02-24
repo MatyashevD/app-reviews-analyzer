@@ -171,57 +171,57 @@ def main():
                     border-radius: 12px;
                     object-fit: cover;
                 }
-                .app-card button {
-                    width: 100%;
-                    padding: 8px;
-                    border-radius: 8px;
-                    border: none;
-                    cursor: pointer;
-                    font-size: 14px;
-                    background: #1967d2;
-                    color: white;
-                    margin-top: 10px;
+                .platform-badge {
+                    padding: 4px 12px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    display: inline-block;
                 }
             </style>
         """
 
-        def render_platform(platform_name, platform_data, platform_key, color, bg_color, css):
+        def render_platform(platform_name, platform_data, platform_key, color, bg_color):
             if platform_data:
                 st.markdown(f"### {platform_name}")
 
-                # Формируем HTML-код для всех карточек сразу
-                cards_html = '<div class="horizontal-scroll">'
-                for app in platform_data:
-                    is_selected = st.session_state.get(f"selected_{platform_key}") == app['id']
-                    button_text = "✓ Выбрано" if is_selected else "Выбрать"
+                # Создаем горизонтальный контейнер с колонками для карточек
+                cols = st.columns(len(platform_data))
 
-                    cards_html += f"""
-                    <div class="app-card">
-                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
-                            <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
-                            <div>
-                                <div style="font-weight: 600; font-size: 16px;">{app['title']}</div>
-                                <div style="font-size: 13px; color: #666;">{app['developer']}</div>
+                for idx, app in enumerate(platform_data):
+                    with cols[idx]:
+                        is_selected = st.session_state.get(f"selected_{platform_key}") == app['id']
+                        
+                        # Отображение карточки
+                        st.markdown(f"""
+                        <div class="app-card">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                                <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 16px;">{app['title']}</div>
+                                    <div style="font-size: 13px; color: #666;">{app['developer']}</div>
+                                </div>
+                            </div>
+                            <div style="color: {color}; font-weight: 500; font-size: 14px; margin-bottom: 10px;">
+                                ★ {app['score']:.1f}
+                            </div>
+                            <div class="platform-badge" style="background: {bg_color}; color: {color};">
+                                {platform_name}
                             </div>
                         </div>
-                        <div style="color: {color}; font-weight: 500; font-size: 14px; margin-bottom: 10px;">
-                            ★ {app['score']:.1f}
-                        </div>
-                        <div style="background: {bg_color}; color: {color}; padding: 4px 12px; 
-                                    border-radius: 20px; font-size: 12px;">
-                            {platform_name}
-                        </div>
-                    </div>
-                    """
-
-                cards_html += '</div>'
-
-                # Используем st.components.v1.html()
-                st.components.v1.html(css + cards_html, height=350)
+                        """, unsafe_allow_html=True)
+                        
+                        # Отображение кнопки "Выбрать"
+                        if st.button(
+                            "✓ Выбрано" if is_selected else "Выбрать",
+                            key=f"{platform_key}_{app['id']}",
+                            use_container_width=True
+                        ):
+                            st.session_state[f"selected_{platform_key}"] = app['id'] if not is_selected else None
+                            st.rerun()
 
         # Рендеринг платформ
-        render_platform("📱 App Store", results["app_store"], "ios", "#ff2d55", "#fde8ef", custom_css)
-        render_platform("📲 Google Play", results["google_play"], "gp", "#1967d2", "#e8f0fe", custom_css)
+        render_platform("📱 App Store", results["app_store"], "ios", "#ff2d55", "#fde8ef")
+        render_platform("📲 Google Play", results["google_play"], "gp", "#1967d2", "#e8f0fe")
 
         if not results["app_store"] and not results["google_play"]:
             st.warning("😞 Приложения не найдены")
