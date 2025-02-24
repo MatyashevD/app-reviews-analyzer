@@ -196,7 +196,7 @@ def main():
                             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                                 <img src="{app.get('icon', 'https://via.placeholder.com/50')}" alt="App Icon">
                                 <div>
-                                    <div style="font-weight: 600; font-size: 14px;">{app['title']}</div>
+                                    <div style="font-weight: 600; font-size: 14px;color: #2e2e2e;">{app['title']}</div>
                                     <div style="font-size: 12px; color: #666;">{app['developer']}</div>
                                 </div>
                             </div>
