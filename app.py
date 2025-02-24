@@ -189,14 +189,15 @@ def main():
         def render_platform(platform_name, platform_data, platform_key, color, bg_color):
             if platform_data:
                 st.markdown(f"### {platform_name}")
+                
+                # Формируем HTML-код для всех карточек сразу
                 cards_html = '<div class="horizontal-scroll">'
-
                 for app in platform_data:
                     is_selected = st.session_state.get(f"selected_{platform_key}") == app['id']
                     button_text = "✓ Выбрано" if is_selected else "Выбрать"
                     button_color = "#0d6efd" if is_selected else "#28a745"
 
-                    card_html = f"""
+                    cards_html += f"""
                     <div class="app-card">
                         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                             <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
@@ -212,14 +213,11 @@ def main():
                                     border-radius: 20px; font-size: 12px;">
                             {platform_name}
                         </div>
-                        <button onclick="selectApp('{platform_key}', '{app['id']}')" 
-                                style="background: {button_color}; color: white;">{button_text}</button>
                     </div>
                     """
-                    cards_html += card_html
 
                 cards_html += '</div>'
-                st.markdown(cards_html, unsafe_allow_html=True)
+                st.markdown(cards_html, unsafe_allow_html=True)  # Отображаем HTML ОДНИМ ВЫЗОВОМ
 
         # Рендеринг платформ
         render_platform("📱 App Store", results["app_store"], "ios", "#ff2d55", "#fde8ef")
@@ -227,7 +225,6 @@ def main():
 
         if not results["app_store"] and not results["google_play"]:
             st.warning("😞 Приложения не найдены")
-
 
 
     def get_reviews(app_id: str, platform: str, start_date: datetime.date = None, end_date: datetime.date = None):
