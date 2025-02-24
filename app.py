@@ -182,7 +182,6 @@ def main():
                 display: block;
                 max-width: 350px;  /* Ограничиваем максимальную ширину кнопки до ширины карточки */
                 width: 100%;
-                margin-top: 8px;  /* Легкое смещение сверху */
                 margin: 0 auto;
             }
             
