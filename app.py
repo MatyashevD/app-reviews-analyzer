@@ -142,12 +142,11 @@ def main():
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
-
     def display_search_results(results: dict):
         st.subheader("🔍 Результаты поиска", divider="rainbow")
 
         # CSS стили
-        st.markdown("""
+        custom_css = """
             <style>
                 .horizontal-scroll {
                     display: flex;
@@ -184,18 +183,17 @@ def main():
                     margin-top: 10px;
                 }
             </style>
-        """, unsafe_allow_html=True)
+        """
 
-        def render_platform(platform_name, platform_data, platform_key, color, bg_color):
+        def render_platform(platform_name, platform_data, platform_key, color, bg_color, css):
             if platform_data:
                 st.markdown(f"### {platform_name}")
-                
+
                 # Формируем HTML-код для всех карточек сразу
                 cards_html = '<div class="horizontal-scroll">'
                 for app in platform_data:
                     is_selected = st.session_state.get(f"selected_{platform_key}") == app['id']
                     button_text = "✓ Выбрано" if is_selected else "Выбрать"
-                    button_color = "#0d6efd" if is_selected else "#28a745"
 
                     cards_html += f"""
                     <div class="app-card">
@@ -217,15 +215,16 @@ def main():
                     """
 
                 cards_html += '</div>'
-                st.components.v1.html(custom_css + cards_html, height=350)
+
+                # Используем st.components.v1.html()
+                st.components.v1.html(css + cards_html, height=350)
 
         # Рендеринг платформ
-        render_platform("📱 App Store", results["app_store"], "ios", "#ff2d55", "#fde8ef")
-        render_platform("📲 Google Play", results["google_play"], "gp", "#1967d2", "#e8f0fe")
+        render_platform("📱 App Store", results["app_store"], "ios", "#ff2d55", "#fde8ef", custom_css)
+        render_platform("📲 Google Play", results["google_play"], "gp", "#1967d2", "#e8f0fe", custom_css)
 
         if not results["app_store"] and not results["google_play"]:
             st.warning("😞 Приложения не найдены")
-
 
     def get_reviews(app_id: str, platform: str, start_date: datetime.date = None, end_date: datetime.date = None):
         try:
