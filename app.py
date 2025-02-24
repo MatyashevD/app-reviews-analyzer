@@ -148,9 +148,10 @@ def main():
             <style>
             .cards-container {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 24px;
-                width: 100%;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 20px;
+                max-width: 1200px;
+                margin: 0 auto;
                 padding: 16px 0;
             }
             
