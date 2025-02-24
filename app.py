@@ -186,7 +186,6 @@ def main():
                 st.markdown('<div class="BQCWeek"><div class="IUUIkoI">', unsafe_allow_html=True)
                 
                 for app in results["app_store"]:
-                    st.markdown(f'<div class="czHTDZs">{card_html}</div>', unsafe_allow_html=True)
                     is_selected = st.session_state.selected_ios_app and app['id'] == st.session_state.selected_ios_app['id']
                     platform_style = {'bg': '#fde8ef', 'color': '#ff2d55'}
                     
@@ -215,7 +214,7 @@ def main():
                     </div>
                     """
                     
-                    st.markdown(card_html, unsafe_allow_html=True)
+                    st.markdown(f'<div class="mobile-card">{card_html}</div>', unsafe_allow_html=True)
                     
                     if st.button(
                         "✓ Выбрано" if is_selected else "Выбрать",
@@ -234,7 +233,6 @@ def main():
                 st.markdown('<div class="BQCWeek"><div class="IUUIkoI">', unsafe_allow_html=True)
                 
                 for app in results["google_play"]:
-                    st.markdown(f'<div class="czHTDZs">{card_html}</div>', unsafe_allow_html=True)
                     is_selected = st.session_state.selected_gp_app and app['id'] == st.session_state.selected_gp_app['id']
                     platform_style = {'bg': '#e8f0fe', 'color': '#1967d2'}
                     
@@ -262,7 +260,7 @@ def main():
                         </div>
                     </div>
                     """
-                    st.markdown(card_html, unsafe_allow_html=True)
+                    st.markdown(f'<div class="mobile-card">{card_html}</div>', unsafe_allow_html=True)
                     
                     if st.button(
                         "✓ Выбрано" if is_selected else "Выбрать",
