@@ -249,7 +249,7 @@ def main():
                     "✓ Выбрано" if is_selected else "Выбрать",
                     key=f"select_{app['id']}",
                     type="primary" if is_selected else "secondary",
-                    use_container_width=False
+                    use_container_width=True
                 ):
                     if app['platform'] == 'Google Play':
                         st.session_state.selected_gp_app = app if not is_selected else None
