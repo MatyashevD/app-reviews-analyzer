@@ -176,13 +176,7 @@ def main():
                 min-height: 180px;
                 transition: all 0.2s;
             }
-            
-            .select-button-wrapper {
-            display: flex;
-            justify-content: center;  /* Центрируем кнопку внутри родительского контейнера */
-            width: 100%;
-            }
-            
+             
             .select-button {
                 width: 100% !important;
                 border-radius: 8px !important;
