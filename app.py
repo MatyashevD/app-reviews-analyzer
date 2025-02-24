@@ -3,7 +3,6 @@ import streamlit as st
 import requests
 import pandas as pd
 import spacy
-import json
 from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
@@ -98,8 +97,8 @@ def main():
         st.subheader("✅ Выбранные приложения", divider="green")
         cols = st.columns(2)
         selected_apps = [
-            st.session_state.selected_gp_app,
-            st.session_state.selected_ios_app
+            st.session_state.get('selected_gp_app'),
+            st.session_state.get('selected_ios_app')
         ]
         
         for idx, app in enumerate(selected_apps):
@@ -143,11 +142,9 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
 
-  
     def display_search_results(results: dict):
         st.subheader("🔍 Результаты поиска", divider="rainbow")
 
-        # CSS стили для карточек
         custom_css = """
             <style>
                 .horizontal-scroll {
@@ -182,23 +179,18 @@ def main():
                 }
             </style>
         """
-
         st.markdown(custom_css, unsafe_allow_html=True)
 
         def render_platform(platform_name, platform_data, platform_key, color, bg_color):
             if platform_data:
                 st.markdown(f"### {platform_name}")
-
                 cols = st.columns(len(platform_data))
-
+                
                 for idx, app in enumerate(platform_data):
                     with cols[idx]:
-                        if platform_key == "gp":
-                            st.session_state.selected_gp_app = app if not is_selected else None
-                        elif platform_key == "ios":
-                            st.session_state.selected_ios_app = app if not is_selected else None
+                        is_selected = (st.session_state.get(f"selected_{platform_key}") and 
+                                      st.session_state[f"selected_{platform_key}"]['id'] == app['id'])
                         
-                        # Отображение карточки
                         st.markdown(f"""
                         <div class="app-card">
                             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
@@ -217,23 +209,23 @@ def main():
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Отображение кнопки "Выбрать"
                         if st.button(
                             "✓ Выбрано" if is_selected else "Выбрать",
                             key=f"{platform_key}_{app['id']}",
                             use_container_width=True
                         ):
-                            st.session_state[f"selected_{platform_key}"] = app['id'] if not is_selected else None
+                            if platform_key == "gp":
+                                st.session_state.selected_gp_app = app if not is_selected else None
+                            elif platform_key == "ios":
+                                st.session_state.selected_ios_app = app if not is_selected else None
                             st.rerun()
 
-        # Рендеринг платформ
         render_platform("📱 App Store", results["app_store"], "ios", "#ff2d55", "#fde8ef")
         render_platform("📲 Google Play", results["google_play"], "gp", "#1967d2", "#e8f0fe")
 
         if not results["app_store"] and not results["google_play"]:
             st.warning("😞 Приложения не найдены")
 
-    
     def get_reviews(app_id: str, platform: str, start_date: datetime.date = None, end_date: datetime.date = None):
         try:
             if platform == 'google_play':
@@ -249,10 +241,11 @@ def main():
                 return [(r['at'], r['content'], 'Google Play', r['score']) for r in result]
             
             elif platform == 'app_store':
+                selected_app = st.session_state.selected_ios_app
                 app_store_app = AppStore(
                     country=DEFAULT_COUNTRY, 
                     app_id=app_id, 
-                    app_name=st.session_state.selected_ios_app['title']
+                    app_name=selected_app['title']
                 )
                 app_store_app.review(how_many=1000)
                 reviews = app_store_app.reviews
@@ -408,21 +401,15 @@ def main():
             st.rerun()
     
     # Отображение выбранных приложений
-    if st.session_state.selected_gp_app or st.session_state.selected_ios_app:
+    if st.session_state.get('selected_gp_app') or st.session_state.get('selected_ios_app'):
         display_selected_apps()
 
-    # Проверка количества выбранных приложений
-    selected_count = sum([
-        1 if st.session_state.selected_gp_app else 0,
-        1 if st.session_state.selected_ios_app else 0
-    ])
-
-    # Отображение результатов поиска только если выбрано меньше 2 приложений
-    if 'search_results' in st.session_state and selected_count < 2:
+    # Отображение результатов поиска
+    if 'search_results' in st.session_state:
         display_search_results(st.session_state.search_results)
 
     # Блок анализа
-    if selected_count == 2:
+    if st.session_state.get('selected_gp_app') or st.session_state.get('selected_ios_app'):
         with st.container():
             main_cols = st.columns([3, 3, 2])
             
@@ -445,13 +432,13 @@ def main():
                     with st.spinner("Анализ отзывов..."):
                         all_reviews = []
                         try:
-                            if st.session_state.selected_gp_app:
+                            if st.session_state.get('selected_gp_app'):
                                 all_reviews += get_reviews(
                                     st.session_state.selected_gp_app['id'], 
                                     'google_play', 
                                     start_date, 
                                     end_date)
-                            if st.session_state.selected_ios_app:
+                            if st.session_state.get('selected_ios_app'):
                                 all_reviews += get_reviews(
                                     st.session_state.selected_ios_app['id'], 
                                     'app_store', 
