@@ -160,11 +160,10 @@ def main():
             }
             
             .card-wrapper {
-                width: 100%;
-                max-width: 280px;
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
+                align-items: center;  /* Центрируем все элементы внутри карточки */
+                gap: 12px;
             }
             
             .mobile-card {
