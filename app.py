@@ -150,48 +150,49 @@ def main():
     def display_search_results(results: dict):
         st.subheader("🔍 Результаты поиска", divider="rainbow")
         st.markdown("""
-        <style>
+            <style>
             .cards-container {
                 display: grid;
-                grid-template-columns: repeat(2, minmax(300px, 1fr));
-                gap: 16px;
-                padding: 12px 0;
+                grid-template-columns: repeat(3, minmax(250px, 1fr));
+                gap: 24px;
+                padding: 16px 0;
+                justify-content: center;
             }
+            
+            .card-wrapper {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+            }
+            
             .mobile-card {
                 border: 1px solid #e0e0e0;
                 border-radius: 12px;
                 padding: 16px;
                 background: white;
-                cursor: pointer;
+                width: 100%;
+                max-width: 280px;
+                min-height: 180px;
                 transition: all 0.2s;
-                min-height: 120px;
             }
-            .selected-card { 
-                border: 2px solid #4CAF50;
-                background: #f8fff8 !important;
-                box-shadow: 0 4px 12px rgba(76,175,80,0.1) !important;
+            
+            .select-button {
+                width: 100%;
+                max-width: 280px;
+                margin-top: -8px;
             }
-            .app-title {
-                font-size: 16px;
-                font-weight: 600;
-                color: #1a1a1a;
-                margin-bottom: 4px;
+            
+            @media (max-width: 1200px) {
+                .cards-container {
+                    grid-template-columns: repeat(2, 1fr);
+                }
             }
-            .developer {
-                font-size: 13px;
-                color: #666;
-                margin-bottom: 8px;
-            }
-            .meta-info {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            .platform-tag {
-                padding: 4px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: 500;
+            
+            @media (max-width: 768px) {
+                .cards-container {
+                    grid-template-columns: 1fr;
+                }
             }
         </style>
         """, unsafe_allow_html=True)
