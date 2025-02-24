@@ -147,24 +147,23 @@ def main():
         st.subheader("🔍 Результаты поиска", divider="rainbow")
 
         # CSS стили
-        css_styles = """
+        st.markdown("""
             <style>
                 .horizontal-scroll {
                     display: flex;
                     overflow-x: auto;
                     white-space: nowrap;
-                    padding-bottom: 10px;
+                    padding: 10px 0;
                     gap: 20px;
                 }
                 .app-card {
                     display: inline-block;
-                    width: 250px;
+                    width: 260px;
                     border: 1px solid #e0e0e0;
                     border-radius: 12px;
                     padding: 16px;
                     background: white;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-                    vertical-align: top;
                     text-align: left;
                 }
                 .app-card img {
@@ -182,23 +181,24 @@ def main():
                     font-size: 14px;
                     background: #1967d2;
                     color: white;
+                    margin-top: 10px;
                 }
             </style>
-        """
-        
-        st.markdown(css_styles, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
         def render_platform(platform_name, platform_data, platform_key, color, bg_color):
             if platform_data:
                 st.markdown(f"### {platform_name}")
                 cards_html = '<div class="horizontal-scroll">'
-                
+
                 for app in platform_data:
                     is_selected = st.session_state.get(f"selected_{platform_key}") == app['id']
-                    
+                    button_text = "✓ Выбрано" if is_selected else "Выбрать"
+                    button_color = "#0d6efd" if is_selected else "#28a745"
+
                     card_html = f"""
                     <div class="app-card">
-                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                             <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
                             <div>
                                 <div style="font-weight: 600; font-size: 16px;">{app['title']}</div>
@@ -212,12 +212,14 @@ def main():
                                     border-radius: 20px; font-size: 12px;">
                             {platform_name}
                         </div>
+                        <button onclick="selectApp('{platform_key}', '{app['id']}')" 
+                                style="background: {button_color}; color: white;">{button_text}</button>
                     </div>
                     """
                     cards_html += card_html
 
                 cards_html += '</div>'
-                st.components.v1.html(cards_html, height=280, scrolling=True)
+                st.markdown(cards_html, unsafe_allow_html=True)
 
         # Рендеринг платформ
         render_platform("📱 App Store", results["app_store"], "ios", "#ff2d55", "#fde8ef")
@@ -225,6 +227,7 @@ def main():
 
         if not results["app_store"] and not results["google_play"]:
             st.warning("😞 Приложения не найдены")
+
 
 
     def get_reviews(app_id: str, platform: str, start_date: datetime.date = None, end_date: datetime.date = None):
