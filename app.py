@@ -142,7 +142,8 @@ def main():
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
-     def display_search_results(results: dict):
+
+    def display_search_results(results: dict):
         st.subheader("🔍 Результаты поиска", divider="rainbow")
 
         # CSS стили для горизонтального скролла и карточек
@@ -232,7 +233,7 @@ def main():
         if not results["app_store"] and not results["google_play"]:
             st.warning("😞 Приложения не найдены")
 
-
+    
     def get_reviews(app_id: str, platform: str, start_date: datetime.date = None, end_date: datetime.date = None):
         try:
             if platform == 'google_play':
