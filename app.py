@@ -146,15 +146,22 @@ def main():
         st.subheader("🔍 Результаты поиска", divider="rainbow")
         st.markdown("""
             <style>
+            .platform-section {
+                margin-bottom: 40px;
+            }
+            .platform-title {
+                font-size: 20px !important;
+                margin: 15px 0 20px 0 !important;
+                padding-bottom: 8px;
+                border-bottom: 2px solid #eee;
+            }
             .cards-container {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
                 gap: 20px;
-                max-width: 1200px;
-                margin: 0 auto;
+                width: 100%;
                 padding: 16px 0;
             }
-            
             .mobile-card {
                 border: 1px solid #e0e0e0;
                 border-radius: 12px;
@@ -165,19 +172,108 @@ def main():
                 flex-direction: column;
                 justify-content: space-between;
                 transition: transform 0.2s;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             }
-            
-            .mobile-card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-            }
-            
-            .st-emotion-cache-1v0mbdj {
-                max-width: none !important;
+            .select-button {
+                margin-top: 12px !important;
             }
             </style>
         """, unsafe_allow_html=True)
+
+        # Секция App Store
+        if results["app_store"]:
+            with st.container():
+                st.markdown('<div class="platform-section">', unsafe_allow_html=True)
+                st.markdown('### 📱 App Store', unsafe_allow_html=True)
+                st.markdown('<div class="cards-container">', unsafe_allow_html=True)
+                
+                for app in results["app_store"]:
+                    is_selected = st.session_state.selected_ios_app and app['id'] == st.session_state.selected_ios_app['id']
+                    platform_style = {'bg': '#fde8ef', 'color': '#ff2d55'}
+                    
+                    card = f"""
+                    <div class="mobile-card">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img src="{app.get('icon', 'https://via.placeholder.com/50')}" 
+                                 style="width: 50px; height: 50px; border-radius: 12px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 16px;">{app['title']}</div>
+                                <div style="font-size: 13px; color: #666;">{app['developer']}</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="color: {platform_style['color']}; font-weight: 500;">
+                                ★ {app['score']:.1f}
+                            </div>
+                            <div style="background: {platform_style['bg']}; 
+                                 color: {platform_style['color']}; 
+                                 padding: 4px 12px; 
+                                 border-radius: 20px;
+                                 font-size: 12px;">
+                                App Store
+                            </div>
+                        </div>
+                    </div>
+                    """
+                    st.markdown(card, unsafe_allow_html=True)
+                    
+                    if st.button(
+                        "✓ Выбрано" if is_selected else "Выбрать",
+                        key=f"ios_{app['id']}",
+                        type="primary" if is_selected else "secondary",
+                        use_container_width=True
+                    ):
+                        st.session_state.selected_ios_app = app if not is_selected else None
+                        st.rerun()
+                
+                st.markdown('</div></div>', unsafe_allow_html=True)
+        
+        # Секция Google Play
+        if results["google_play"]:
+            with st.container():
+                st.markdown('<div class="platform-section">', unsafe_allow_html=True)
+                st.markdown('### 📲 Google Play', unsafe_allow_html=True)
+                st.markdown('<div class="cards-container">', unsafe_allow_html=True)
+                
+                for app in results["google_play"]:
+                    is_selected = st.session_state.selected_gp_app and app['id'] == st.session_state.selected_gp_app['id']
+                    platform_style = {'bg': '#e8f0fe', 'color': '#1967d2'}
+                    
+                    card = f"""
+                    <div class="mobile-card">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img src="{app.get('icon', 'https://via.placeholder.com/50')}" 
+                                 style="width: 50px; height: 50px; border-radius: 12px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 16px;">{app['title']}</div>
+                                <div style="font-size: 13px; color: #666;">{app['developer']}</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="color: {platform_style['color']}; font-weight: 500;">
+                                ★ {app['score']:.1f}
+                            </div>
+                            <div style="background: {platform_style['bg']}; 
+                                 color: {platform_style['color']}; 
+                                 padding: 4px 12px; 
+                                 border-radius: 20px;
+                                 font-size: 12px;">
+                                Google Play
+                            </div>
+                        </div>
+                    </div>
+                    """
+                    st.markdown(card, unsafe_allow_html=True)
+                    
+                    if st.button(
+                        "✓ Выбрано" if is_selected else "Выбрать",
+                        key=f"gp_{app['id']}",
+                        type="primary" if is_selected else "secondary",
+                        use_container_width=True
+                    ):
+                        st.session_state.selected_gp_app = app if not is_selected else None
+                        st.rerun()
+                
+                st.markdown('</div></div>', unsafe_allow_html=True)
 
         if not results["google_play"] and not results["app_store"]:
             st.warning("😞 Приложения не найдены")
