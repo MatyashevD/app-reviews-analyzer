@@ -156,7 +156,7 @@ def main():
                 }
                 .app-card {
                     display: inline-block;
-                    width: 300px;
+                    width: 400px;
                     border: 1px solid #e0e0e0;
                     border-radius: 12px;
                     padding: 12px;
