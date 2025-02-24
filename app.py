@@ -202,21 +202,20 @@ def main():
                 
                 card_html = f"""
                 <div class="mobile-card">
-                    <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                         <img src="{app.get('icon', 'https://via.placeholder.com/50x50?text=No+Icon')}" 
-                             alt="Иконка" 
-                             style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
-                        <div>
-                            <div style="font-weight: 600; font-size: 16px;">{app['title']}</div>
-                            <div style="font-size: 13px; color: #666;">{app['developer']}</div>
+                             style="width: 45px; height: 45px; border-radius: 10px; object-fit: cover;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 15px; line-height: 1.3;">{app['title']}</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 4px;">{app['developer']}</div>
                         </div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
-                        <div style="color: {platform_style['color']}; font-weight: 500;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="color: {platform_style['color']}; font-weight: 500; font-size: 14px;">
                             ★ {app['score']:.1f}
                         </div>
                         <div style="background: {platform_style['bg']}; color: {platform_style['color']}; 
-                             padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                             padding: 4px 10px; border-radius: 18px; font-size: 11px;">
                             {app['platform']}
                         </div>
                     </div>
