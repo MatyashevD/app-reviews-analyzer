@@ -253,7 +253,7 @@ def main():
                         st.session_state.selected_ios_app = app if not is_selected else None
                     st.rerun()
             
-                st.markdown(f'<button style="width: auto; padding: 8px 16px; border-radius: 8px;">Выбрать</button>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
     def get_reviews(app_id: str, platform: str, start_date: datetime.date = None, end_date: datetime.date = None):
         try:
