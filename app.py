@@ -163,7 +163,7 @@ def main():
 
         /* Индивидуальная карточка */
         .mobile-card {
-            flex: 0 0 300px;
+            flex-wrap: nowrap;
             border: 1px solid #e0e0e0;
             border-radius: 12px;
             padding: 16px;
