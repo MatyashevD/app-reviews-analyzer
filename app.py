@@ -145,47 +145,48 @@ def main():
     def display_search_results(results: dict):
         st.subheader("🔍 Результаты поиска", divider="rainbow")
         st.markdown("""
-        <style>
-        /* Основной контейнер для горизонтальной прокрутки */
-        .scroll-container {
-            width: 100%;
-            overflow-x: auto;
-            padding-bottom: 20px;
-        }
-
-        /* Строка карточек */
-        .cards-row {
-            display: flex;
-            flex-wrap: nowrap;
-            gap: 20px;
-            padding: 10px 5px;
-        }
-
-        /* Индивидуальная карточка */
-        .mobile-card {
-            flex-wrap: nowrap;
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 16px;
-            background: white;
-            min-height: 160px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        /* Переопределение стилей Streamlit */
-        .stMarkdown {
-            flex-shrink: 0 !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+            <style>
+            /* Главный контейнер */
+            .BQCWeek {
+                overflow-x: auto;
+                padding-bottom: 15px;
+                margin: 0 -1rem;
+            }
+    
+            /* Флекс-контейнер */
+            .IUUIkoI {
+                display: flex;
+                flex-wrap: nowrap;
+                gap: 20px;
+                padding: 0 1rem;
+                min-width: max-content;
+            }
+    
+            /* Индивидуальная карточка */
+            .czHTDZs {
+                flex: 0 0 300px;
+                border: 1px solid #e0e0e0;
+                border-radius: 12px;
+                padding: 16px;
+                background: white;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            }
+    
+            /* Переопределение стилей Streamlit */
+            section[data-testid="stHorizontalBlock"] {
+                overflow: visible !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
 
         # Секция App Store
         if results["app_store"]:
             with st.container():
                 st.markdown('### 📱 App Store')
-                st.markdown('<div class="scroll-container"><div class="cards-row">', unsafe_allow_html=True)
+                st.markdown('<div class="BQCWeek"><div class="IUUIkoI">', unsafe_allow_html=True)
                 
                 for app in results["app_store"]:
+                    st.markdown(f'<div class="czHTDZs">{card_html}</div>', unsafe_allow_html=True)
                     is_selected = st.session_state.selected_ios_app and app['id'] == st.session_state.selected_ios_app['id']
                     platform_style = {'bg': '#fde8ef', 'color': '#ff2d55'}
                     
@@ -230,9 +231,10 @@ def main():
         if results["google_play"]:
             with st.container():
                 st.markdown('### 📲 Google Play')
-                st.markdown('<div class="scroll-container"><div class="cards-row">', unsafe_allow_html=True)
+                st.markdown('<div class="BQCWeek"><div class="IUUIkoI">', unsafe_allow_html=True)
                 
                 for app in results["google_play"]:
+                    st.markdown(f'<div class="czHTDZs">{card_html}</div>', unsafe_allow_html=True)
                     is_selected = st.session_state.selected_gp_app and app['id'] == st.session_state.selected_gp_app['id']
                     platform_style = {'bg': '#e8f0fe', 'color': '#1967d2'}
                     
