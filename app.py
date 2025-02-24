@@ -3,6 +3,7 @@ import streamlit as st
 import requests
 import pandas as pd
 import spacy
+import json
 from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
