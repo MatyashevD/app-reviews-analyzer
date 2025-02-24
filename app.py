@@ -255,6 +255,8 @@ def main():
             
                 st.markdown('</div>', unsafe_allow_html=True)
 
+            st.markdown('</div>', unsafe_allow_html=True)  # Закрываем cards-container
+
     def get_reviews(app_id: str, platform: str, start_date: datetime.date = None, end_date: datetime.date = None):
         try:
             if platform == 'google_play':
