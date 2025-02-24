@@ -244,7 +244,6 @@ def main():
                 """
                 st.markdown(card_html, unsafe_allow_html=True)
 
-                st.markdown('<div class="select-button-wrapper">', unsafe_allow_html=True)
                 if st.button(
                     "✓ Выбрано" if is_selected else "Выбрать",
                     key=f"select_{app['id']}",
