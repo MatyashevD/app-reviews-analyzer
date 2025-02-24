@@ -219,7 +219,7 @@ def main():
                 }[app['platform']]
                 
                 card_html = f"""
-                <div class="mobile-card {'selected-card' if is_selected else ''}">
+                <div class="mobile-card {'selected-card' if is_selected else ''}" style="max-width: 350px; width: 100%; margin: auto;">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
                         <img src="{app.get('icon', 'https://via.placeholder.com/50x50?text=No+Icon')}" 
                              alt="Иконка" 
