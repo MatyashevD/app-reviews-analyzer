@@ -219,7 +219,7 @@ def main():
                 card_html = f"""
                 <div class="mobile-card {'selected-card' if is_selected else ''}">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
-                        <img src="{app['icon']}" 
+                        <img src="{icon_url}"  
                             alt="Иконка" 
                             style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
                         <div>
