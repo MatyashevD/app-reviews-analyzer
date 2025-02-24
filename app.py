@@ -193,7 +193,10 @@ def main():
 
                 for idx, app in enumerate(platform_data):
                     with cols[idx]:
-                        is_selected = st.session_state.get(f"selected_{platform_key}") == app['id']
+                        if platform_key == "gp":
+                            st.session_state.selected_gp_app = app if not is_selected else None
+                        elif platform_key == "ios":
+                            st.session_state.selected_ios_app = app if not is_selected else None
                         
                         # Отображение карточки
                         st.markdown(f"""
