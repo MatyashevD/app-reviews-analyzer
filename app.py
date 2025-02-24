@@ -221,7 +221,7 @@ def main():
                             st.rerun()
 
         render_platform(" App Store", results["app_store"], "ios", "#ff2d55", "#fde8ef")
-        render_platform("📲 Google Play", results["google_play"], "gp", "#1967d2", "#e8f0fe")
+        render_platform("📲 Google Play", results["google_play"], "gp", "#36c55f", "#e8f0fe")
 
         if not results["app_store"] and not results["google_play"]:
             st.warning("😞 Приложения не найдены")
