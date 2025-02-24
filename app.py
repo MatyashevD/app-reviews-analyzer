@@ -178,10 +178,9 @@ def main():
             }
             
             .select-button {
-                display: block;
-                max-width: 350px;  /* Ограничиваем максимальную ширину кнопки до ширины карточки */
-                width: 100%;
-                margin: 0 auto;
+                width: auto; 
+                max-width: 350px; 
+                margin-top: 8px;  
             }
             
             @media (max-width: 1200px) {
