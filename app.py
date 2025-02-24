@@ -142,35 +142,42 @@ def main():
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
-    def display_search_results(results: dict):
+     def display_search_results(results: dict):
         st.subheader("🔍 Результаты поиска", divider="rainbow")
 
-        # CSS стили для карточек и горизонтального скролла
+        # CSS стили для горизонтального скролла и карточек
         custom_css = """
             <style>
+                /* Горизонтальный скролл */
                 .horizontal-scroll {
                     display: flex;
                     overflow-x: auto;
                     white-space: nowrap;
                     padding: 10px 0;
                     gap: 20px;
+                    scroll-snap-type: x mandatory;
                 }
+                
                 .app-card {
-                    flex: 0 0 260px;
+                    flex: 0 0 300px; /* фиксированная ширина для карточек */
                     border: 1px solid #e0e0e0;
                     border-radius: 12px;
-                    padding: 12px;
+                    padding: 16px;
                     background: white;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
                     text-align: left;
                     font-family: Arial, sans-serif;
+                    scroll-snap-align: start;
+                    box-sizing: border-box; /* Чтобы все карточки имели одинаковые размеры */
                 }
+                
                 .app-card img {
-                    width: 50px; 
+                    width: 50px;
                     height: 50px;
                     border-radius: 12px;
                     object-fit: cover;
                 }
+                
                 .platform-badge {
                     padding: 4px 12px;
                     border-radius: 20px;
@@ -185,6 +192,7 @@ def main():
             if platform_data:
                 st.markdown(f"### {platform_name}")
                 with st.container():
+                    # Контейнер для горизонтального скролла
                     st.markdown('<div class="horizontal-scroll">', unsafe_allow_html=True)
 
                     for app in platform_data:
