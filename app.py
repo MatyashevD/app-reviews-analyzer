@@ -177,6 +177,12 @@ def main():
                 transition: all 0.2s;
             }
             
+            .select-button-wrapper {
+            display: flex;
+            justify-content: center;  /* Центрируем кнопку внутри родительского контейнера */
+            width: 100%;
+            }
+            
             .select-button {
                 width: auto; 
                 max-width: 350px; 
@@ -243,7 +249,8 @@ def main():
                 </div>
                 """
                 st.markdown(card_html, unsafe_allow_html=True)
-                
+
+                st.markdown('<div class="select-button-wrapper">', unsafe_allow_html=True)
                 if st.button(
                     "✓ Выбрано" if is_selected else "Выбрать",
                     key=f"select_{app['id']}",
