@@ -48,10 +48,10 @@ def main():
             "developer": r["developer"],
             "score": r["score"], 
             "platform": 'Google Play',
-            "match_score": fuzz.token_set_ratio(query, r['title']),
-            "icon": r["icon"]  # Добавляем URL иконки
+            "match_score": fuzz.token_set_ratio(query, r['title']),  # ← Запятая
+            "icon": r["icon"]  # ← Последний элемент (запятая не нужна)
         } for r in gp_results if r.get("score", 0) > 0]
-            
+                    
         except Exception as e:
             st.error(f"Ошибка поиска в Google Play: {str(e)}")
         
