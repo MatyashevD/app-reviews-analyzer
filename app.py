@@ -146,24 +146,24 @@ def main():
         st.subheader("🔍 Результаты поиска", divider="rainbow")
         st.markdown("""
             <style>
-            /* Главный контейнер */
-            .scroll-container {
+            /* Главный контейнер для горизонтального скролла */
+            .horizontal-scroll {
                 overflow-x: auto;
-                padding-bottom: 15px;
+                padding-bottom: 20px;
                 margin: 0 -1rem;
             }
-    
-            /* Флекс-контейнер */
-            .cards-row {
+
+            /* Контейнер для карточек */
+            .cards-wrapper {
                 display: flex;
                 flex-wrap: nowrap;
                 gap: 20px;
                 padding: 0 1rem;
                 min-width: max-content;
             }
-    
-            /* Индивидуальная карточка */
-            .mobile-card {
+
+            /* Стиль карточки */
+            .app-card {
                 flex: 0 0 300px;
                 border: 1px solid #e0e0e0;
                 border-radius: 12px;
@@ -171,21 +171,30 @@ def main():
                 background: white;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             }
+
+            /* Переопределение стилей Streamlit */
+            div[data-testid="stHorizontalBlock"] {
+                overflow: visible !important;
+            }
+            .stMarkdown {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
             </style>
         """, unsafe_allow_html=True)
 
         # Секция App Store
         if results["app_store"]:
+            st.markdown('### 📱 App Store')
             with st.container():
-                st.markdown('### 📱 App Store')
-                st.markdown('<div class="BQCWeek"><div class="IUUIkoI">', unsafe_allow_html=True)
+                st.markdown('<div class="horizontal-scroll"><div class="cards-wrapper">', unsafe_allow_html=True)
                 
                 for app in results["app_store"]:
                     is_selected = st.session_state.selected_ios_app and app['id'] == st.session_state.selected_ios_app['id']
                     platform_style = {'bg': '#fde8ef', 'color': '#ff2d55'}
                     
                     card_html = f"""
-                    <div class="mobile-card">
+                    <div class="app-card">
                         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
                             <img src="{app.get('icon', 'https://via.placeholder.com/50')}" 
                                 style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
@@ -209,7 +218,7 @@ def main():
                     </div>
                     """
                     
-                    st.markdown(f'<div class="mobile-card">{card_html}</div>', unsafe_allow_html=True)
+                    st.markdown(card_html, unsafe_allow_html=True)
                     
                     if st.button(
                         "✓ Выбрано" if is_selected else "Выбрать",
@@ -223,16 +232,16 @@ def main():
 
         # Секция Google Play
         if results["google_play"]:
+            st.markdown('### 📲 Google Play')
             with st.container():
-                st.markdown('### 📲 Google Play')
-                st.markdown('<div class="BQCWeek"><div class="IUUIkoI">', unsafe_allow_html=True)
+                st.markdown('<div class="horizontal-scroll"><div class="cards-wrapper">', unsafe_allow_html=True)
                 
                 for app in results["google_play"]:
                     is_selected = st.session_state.selected_gp_app and app['id'] == st.session_state.selected_gp_app['id']
                     platform_style = {'bg': '#e8f0fe', 'color': '#1967d2'}
                     
                     card_html = f"""
-                    <div class="mobile-card">
+                    <div class="app-card">
                         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
                             <img src="{app.get('icon', 'https://via.placeholder.com/50')}" 
                                 style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
@@ -255,7 +264,8 @@ def main():
                         </div>
                     </div>
                     """
-                    st.markdown(f'<div class="mobile-card">{card_html}</div>', unsafe_allow_html=True)
+                    
+                    st.markdown(card_html, unsafe_allow_html=True)
                     
                     if st.button(
                         "✓ Выбрано" if is_selected else "Выбрать",
