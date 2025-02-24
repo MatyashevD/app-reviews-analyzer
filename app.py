@@ -217,7 +217,7 @@ def main():
                     """
 
                 cards_html += '</div>'
-                st.markdown(cards_html, unsafe_allow_html=True)  # Отображаем HTML ОДНИМ ВЫЗОВОМ
+                st.components.v1.html(custom_css + cards_html, height=350)
 
         # Рендеринг платформ
         render_platform("📱 App Store", results["app_store"], "ios", "#ff2d55", "#fde8ef")
