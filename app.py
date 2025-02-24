@@ -217,25 +217,25 @@ def main():
                 }[app['platform']]
                 
                 card_html = f"""
-                    <div class="mobile-card {'selected-card' if is_selected else ''}">
-                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
-                            <img src="{icon_url}" 
-                                alt="Иконка" 
-                                style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
-                            <div>
-                                <div class="app-title">{app.get('title', 'Без названия')}</div>
-                                <div class="developer">{app.get('developer', 'Неизвестный разработчик')}</div>
-                            </div>
-                        </div>
-                        <div class="meta-info">
-                            <div style="color: {platform_style['color']}; font-weight: 500;">
-                                ★ {app.get('score', 0):.1f}
-                            </div>
-                            <div class="platform-tag" style="background: {platform_style['bg']}; color: {platform_style['color']};">
-                                {app.get('platform', 'Неизвестная платформа')}
-                            </div>
+                <div class="mobile-card {'selected-card' if is_selected else ''}">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                        <img src="{app['icon']}" 
+                            alt="Иконка" 
+                            style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
+                        <div>
+                            <div class="app-title">{app.get('title', 'Без названия')}</div>
+                            <div class="developer">{app.get('developer', 'Неизвестный разработчик')}</div>
                         </div>
                     </div>
+                    <div class="meta-info">
+                        <div style="color: {platform_style['color']}; font-weight: 500;">
+                                ★ {app.get('score', 0):.1f}
+                        </div>
+                        <div class="platform-tag" style="background: {platform_style['bg']}; color: {platform_style['color']};">
+                                {app.get('platform', 'Неизвестная платформа')}
+                        </div>
+                    </div>
+                </div>
                 """
                 st.markdown(card_html, unsafe_allow_html=True)
                 
