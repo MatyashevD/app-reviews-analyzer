@@ -189,8 +189,9 @@ def main():
             if platform_data:
                 st.markdown(f"### {platform_name}")
 
-                # Создаем горизонтальный контейнер с колонками для карточек
-                cols = st.columns(len(platform_data))
+                # Фиксируем количество колонок (например, 8)
+                num_columns = 5
+                cols = st.columns(num_columns)
 
                 for idx, app in enumerate(platform_data):
                     with cols[idx]:
