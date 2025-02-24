@@ -147,14 +147,14 @@ def main():
         st.markdown("""
             <style>
             /* Главный контейнер */
-            .BQCWeek {
+            .scroll-container {
                 overflow-x: auto;
                 padding-bottom: 15px;
                 margin: 0 -1rem;
             }
     
             /* Флекс-контейнер */
-            .IUUIkoI {
+            .cards-row {
                 display: flex;
                 flex-wrap: nowrap;
                 gap: 20px;
@@ -163,18 +163,13 @@ def main():
             }
     
             /* Индивидуальная карточка */
-            .czHTDZs {
+            .mobile-card {
                 flex: 0 0 300px;
                 border: 1px solid #e0e0e0;
                 border-radius: 12px;
                 padding: 16px;
                 background: white;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            }
-    
-            /* Переопределение стилей Streamlit */
-            section[data-testid="stHorizontalBlock"] {
-                overflow: visible !important;
             }
             </style>
         """, unsafe_allow_html=True)
