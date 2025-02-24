@@ -42,7 +42,7 @@ def main():
         results = {"google_play": [], "app_store": []}
         
         try:
-            gp_results = search(query, n_hits=20, lang=ru, country=ru)
+            gp_results = search(query, n_hits=20, lang="ru", country="ru")
 
             results["google_play"] = [{
             "id": r["appId"], 
