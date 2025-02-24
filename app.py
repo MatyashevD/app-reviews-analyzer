@@ -218,6 +218,8 @@ def main():
                     'App Store': {'bg': '#fde8ef', 'color': '#ff2d55'}
                 }[app['platform']]
                 
+                st.markdown('<div class="card-wrapper">', unsafe_allow_html=True)
+                
                 card_html = f"""
                 <div class="mobile-card {'selected-card' if is_selected else ''}" style="max-width: 350px; width: 100%; margin: auto;">
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
