@@ -145,121 +145,91 @@ def main():
 
     def display_search_results(results: dict):
         st.subheader("🔍 Результаты поиска", divider="rainbow")
-        
-        # Стили для карточек и контейнеров
+
+        # Стилизация горизонтального скролла
         st.markdown("""
             <style>
-            .cards-container {
-                display: flex;
-                flex-wrap: nowrap;
+            .horizontal-scroll {
                 overflow-x: auto;
-                gap: 20px;
+                white-space: nowrap;
                 padding: 10px 0;
-                margin: 0 -1rem;
+                margin: 0 -1.5rem;
+            }
+            
+            .card-wrapper {
+                display: inline-flex;
+                gap: 20px;
+                padding: 0 1.5rem;
             }
             
             .app-card {
-                flex: 0 0 300px;
+                display: inline-block;
+                width: 300px;
                 border: 1px solid #e0e0e0;
                 border-radius: 12px;
                 padding: 16px;
                 background: white;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-                position: relative;
-            }
-            
-            .platform-header {
-                font-size: 1.5rem !important;
-                margin: 1.5rem 0 1rem 0 !important;
-                padding-bottom: 0.5rem;
-                border-bottom: 2px solid #eee;
-            }
-            
-            .select-button {
-                width: 100%;
-                margin-top: 15px !important;
-            }
-            
-            .app-icon {
-                width: 50px !important;
-                height: 50px !important;
-                border-radius: 12px !important;
-                object-fit: cover !important;
+                vertical-align: top;
             }
             </style>
         """, unsafe_allow_html=True)
 
-        def render_platform_section(platform, platform_results, selected_app_key):
-            st.markdown(f'<div class="platform-header">{"📱 App Store" if platform == "app_store" else "📲 Google Play"}</div>', unsafe_allow_html=True)
-            
-            with st.container():
-                cols = st.columns(1)
-                with cols[0]:
-                    st.markdown('<div class="cards-container">', unsafe_allow_html=True)
+        def render_platform(platform_name, platform_data, platform_key):
+            if platform_data:
+                st.markdown(f"### {platform_name}")
+                with st.container():
+                    # Основной контейнер для скролла
+                    st.markdown("""
+                        <div class="horizontal-scroll">
+                            <div class="card-wrapper">
+                    """, unsafe_allow_html=True)
                     
-                    for app in platform_results:
-                        is_selected = st.session_state.get(selected_app_key) and app['id'] == st.session_state[selected_app_key]['id']
-                        platform_style = {
-                            'app_store': {'bg': '#fde8ef', 'color': '#ff2d55'},
-                            'google_play': {'bg': '#e8f0fe', 'color': '#1967d2'}
-                        }[platform]
+                    for app in platform_data:
+                        is_selected = st.session_state.get(f"selected_{platform_key}") == app['id']
                         
-                        # Рендеринг карточки
-                        card = f"""
-                        <div class="app-card">
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-                                <img src="{app.get('icon', 'https://via.placeholder.com/50')}" class="app-icon">
-                                <div>
-                                    <div style="font-weight: 600; font-size: 16px; line-height: 1.2;">{app['title']}</div>
-                                    <div style="font-size: 13px; color: #666; margin-top: 4px;">{app['developer']}</div>
+                        # Карточка приложения
+                        with st.container():
+                            st.markdown(f"""
+                                <div class="app-card">
+                                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                                        <img src="{app.get('icon', 'https://via.placeholder.com/50')}" 
+                                            style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
+                                        <div>
+                                            <div style="font-weight: 600; font-size: 16px;">{app['title']}</div>
+                                            <div style="font-size: 13px; color: #666;">{app['developer']}</div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div style="color: {'#ff2d55' if platform_key == 'ios' else '#1967d2'}; 
+                                            font-weight: 500;">
+                                            ★ {app['score']:.1f}
+                                        </div>
+                                        <div style="background: {'#fde8ef' if platform_key == 'ios' else '#e8f0fe'}; 
+                                            color: {'#ff2d55' if platform_key == 'ios' else '#1967d2'}; 
+                                            padding: 4px 12px; 
+                                            border-radius: 20px;
+                                            font-size: 12px;">
+                                            {platform_name}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div style="color: {platform_style['color']}; font-weight: 500; font-size: 14px;">
-                                    ★ {app['score']:.1f}
-                                </div>
-                                <div style="background: {platform_style['bg']}; 
-                                    color: {platform_style['color']}; 
-                                    padding: 4px 12px; 
-                                    border-radius: 20px;
-                                    font-size: 12px;">
-                                    {"App Store" if platform == "app_store" else "Google Play"}
-                                </div>
-                            </div>
-                        </div>
-                        """
-                        st.markdown(card, unsafe_allow_html=True)
-                        
-                        # Кнопка выбора
-                        if st.button(
-                            "✓ Выбрано" if is_selected else "Выбрать",
-                            key=f"{platform}_{app['id']}",
-                            type="primary" if is_selected else "secondary",
-                            help="Выберите приложение для анализа",
-                            use_container_width=True
-                        ):
-                            if is_selected:
-                                st.session_state[selected_app_key] = None
-                            else:
-                                st.session_state[selected_app_key] = app
-                            st.rerun()
+                            """, unsafe_allow_html=True)
+                            
+                            # Кнопка выбора
+                            if st.button(
+                                "✓ Выбрано" if is_selected else "Выбрать",
+                                key=f"{platform_key}_{app['id']}",
+                                type="primary" if is_selected else "secondary"
+                            ):
+                                st.session_state[f"selected_{platform_key}"] = app['id'] if not is_selected else None
+                                st.rerun()
                     
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("</div></div>", unsafe_allow_html=True)
 
-        # Рендеринг секций
-        if results["app_store"]:
-            render_platform_section(
-                platform="app_store",
-                platform_results=results["app_store"],
-                selected_app_key="selected_ios_app"
-            )
-
-        if results["google_play"]:
-            render_platform_section(
-                platform="google_play",
-                platform_results=results["google_play"],
-                selected_app_key="selected_gp_app"
-            )
+        # Рендеринг платформ
+        render_platform("📱 App Store", results["app_store"], "ios")
+        render_platform("📲 Google Play", results["google_play"], "gp")
 
         if not results["app_store"] and not results["google_play"]:
             st.warning("😞 Приложения не найдены")
