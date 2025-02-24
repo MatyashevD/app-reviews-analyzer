@@ -151,49 +151,38 @@ def main():
         st.subheader("🔍 Результаты поиска", divider="rainbow")
         st.markdown("""
             <style>
-            .cards-container {
-                display: grid;
-                grid-template-columns: repeat(3, minmax(250px, 1fr));
-                gap: 24px;
-                padding: 16px 0;
-                justify-content: center;
-            }
-            
-            .card-wrapper {
-                display: flex;
-                flex-direction: column;
-                align-items: center;  /* Центрируем все элементы внутри карточки */
-                gap: 12px;
-            }
-            
-            .mobile-card {
-                border: 1px solid #e0e0e0;
-                border-radius: 12px;
-                padding: 16px;
-                background: white;
-                width: 100%;
-                max-width: 280px;
-                min-height: 180px;
-                transition: all 0.2s;
-            }
-             
-            .select-button {
-                width: 100% !important;
-                border-radius: 8px !important;
-                margin: 0 !important;
-            }
-            
-            @media (max-width: 1200px) {
-                .cards-container {
-                    grid-template-columns: repeat(2, 1fr);
-                }
-            }
-            
-            @media (max-width: 768px) {
-                .cards-container {
-                    grid-template-columns: 1fr;
-                }
-            }
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            width: 100%;
+            padding: 16px 0;
+        }
+        
+        .card-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .mobile-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            background: white;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        /* Убираем центрирование из родительского контейнера Streamlit */
+        .stContainer > div {
+            max-width: none !important;
+            padding: 0 !important;
+        }
         </style>
         """, unsafe_allow_html=True)
 
