@@ -181,6 +181,7 @@ def main():
                 max-width: 350px;  /* Ограничиваем максимальную ширину кнопки до ширины карточки */
                 width: 100%;
                 margin-top: 8px;  /* Легкое смещение сверху */
+                align-self: center;
             }
             
             @media (max-width: 1200px) {
