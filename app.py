@@ -177,26 +177,6 @@ def main():
                     font-size: 12px;
                     display: inline-block;
                 }
-                /* Новые стили для кнопок */
-                .app-card button {
-                    width: 100% !important;
-                    border: 1px solid #36c55f !important;
-                    color: #36c55f !important;
-                    background: white !important;
-                    margin-top: 12px !important;
-                    transition: all 0.2s !important;
-                }
-            
-                .app-card button:hover {
-                    background: #f5f5f5 !important;
-                    color: #36c55f !important;
-                }
-            
-                .app-card button:has(div:contains("✓ Выбрано")) {
-                    background: #36c55f !important;
-                    color: white !important;
-                    border-color: #36c55f !important;
-                }
             </style>
         """
         st.markdown(custom_css, unsafe_allow_html=True)
@@ -217,7 +197,7 @@ def main():
                                 <img src="{app.get('icon', 'https://via.placeholder.com/50')}" alt="App Icon">
                                 <div>
                                     <div style="font-weight: 600; font-size: 14px;color: #2e2e2e;">{app['title']}</div>
-                                    <div style="font-size: 12px; color: #666;">{app['developer']}</div>
+                                    <div style="font-size: 12px; color: #a8a8a8;">{app['developer']}</div>
                                 </div>
                             </div>
                             <div style="color: {color}; font-weight: 500; font-size: 14px; margin-bottom: 10px;">
