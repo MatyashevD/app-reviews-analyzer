@@ -155,22 +155,22 @@ def main():
                 padding: 16px 0;
             }
             
-            .card-wrapper {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                width: 100%;
-            }
-            
             .mobile-card {
                 border: 1px solid #e0e0e0;
                 border-radius: 12px;
                 padding: 16px;
                 background: white;
-                min-height: 180px;
+                min-height: 160px;
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
+                transition: transform 0.2s;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            }
+            
+            .mobile-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.12);
             }
             
             .st-emotion-cache-1v0mbdj {
