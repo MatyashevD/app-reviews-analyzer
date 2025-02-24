@@ -184,9 +184,9 @@ def main():
             }
             
             .select-button {
-                width: auto; 
-                max-width: 350px; 
-                margin-top: 8px;  
+                width: 100% !important;
+                border-radius: 8px !important;
+                margin: 0 !important;
             }
             
             @media (max-width: 1200px) {
