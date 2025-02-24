@@ -42,12 +42,15 @@ def main():
         results = {"google_play": [], "app_store": []}
         
         try:
-            gp_results = search(query, lang=DEFAULT_LANG, country=DEFAULT_COUNTRY, n_hits=MAX_RESULTS)
             results["google_play"] = [{
-                "id": r["appId"], "title": r["title"], "developer": r["developer"],
-                "score": r["score"], "platform": 'Google Play',
-                "match_score": fuzz.token_set_ratio(query, r['title'])
-            } for r in gp_results if r.get("score", 0) > 0]
+            "id": r["appId"], 
+            "title": r["title"], 
+            "developer": r["developer"],
+            "score": r["score"], 
+            "platform": 'Google Play',
+            "match_score": fuzz.token_set_ratio(query, r['title']),
+            "icon": r["icon"]  # Добавляем URL иконки
+        } for r in gp_results if r.get("score", 0) > 0]
             
         except Exception as e:
             st.error(f"Ошибка поиска в Google Play: {str(e)}")
@@ -73,7 +76,7 @@ def main():
             processed = []
             for name, group in grouped:
                 best_match = max(group, key=lambda x: fuzz.token_set_ratio(query, x['trackName']))
-                processed.append({**best_match, "match_score": fuzz.token_set_ratio(query, best_match['trackName'])})
+                processed.append({**best_match,"match_score": fuzz.token_set_ratio(query, best_match['trackName']),"icon": best_match["artworkUrl512"].replace("512x512bb", "256x256bb")})
 
             processed.sort(key=lambda x: x['match_score'], reverse=True)
             
@@ -85,6 +88,7 @@ def main():
                 "url": r["trackViewUrl"],
                 "platform": 'App Store',
                 "match_score": r['match_score']
+                "icon": r["icon"]  # Добавляем URL иконки
             } for r in processed if r.get('averageUserRating', 0) > 0][:MAX_RESULTS]
             
         except Exception as e:
@@ -214,8 +218,15 @@ def main():
                 
                 card_html = f"""
                 <div class="mobile-card {'selected-card' if is_selected else ''}">
-                    <div class="app-title">{app['title']}</div>
-                    <div class="developer">{app['developer']}</div>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                        <img src="{app['icon']}" 
+                             alt="Иконка" 
+                             style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
+                        <div>
+                             <div class="app-title">{app['title']}</div>
+                             <div class="developer">{app['developer']}</div>
+                        </div>
+                    </div>
                     <div class="meta-info">
                         <div style="color: {platform_style['color']}; font-weight: 500;">
                             ★ {app['score']:.1f}
