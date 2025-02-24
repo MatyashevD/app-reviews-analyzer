@@ -11,7 +11,6 @@ from fuzzywuzzy import fuzz
 from itertools import groupby
 
 def main():
-    # Конфигурация страницы должна быть первой
     st.set_page_config(
         page_title="Анализатор приложений",
         layout="wide",
@@ -19,15 +18,12 @@ def main():
         menu_items={'About': "### Анализ отзывов из Google Play и App Store"}
     )
 
-    # Инициализация OpenAI клиента
     client = OpenAI(api_key=st.secrets.get("openai_api_key"))
 
-    # Проверка API ключа
     if "openai_api_key" not in st.secrets or not client.api_key:
         st.error("❌ API-ключ OpenAI не найден. Проверьте настройки секретов.")
         st.stop()
 
-    # Загрузка NLP модели
     try:
         nlp = spacy.load("ru_core_news_sm")
     except:
@@ -43,16 +39,15 @@ def main():
         
         try:
             gp_results = search(query, n_hits=20, lang="ru", country="ru")
-
             results["google_play"] = [{
-            "id": r["appId"], 
-            "title": r["title"], 
-            "developer": r["developer"],
-            "score": r["score"], 
-            "platform": 'Google Play',
-            "match_score": fuzz.token_set_ratio(query, r['title']),  # ← Запятая
-            "icon": r["icon"]  # ← Последний элемент (запятая не нужна)
-        } for r in gp_results if r.get("score", 0) > 0]
+                "id": r["appId"], 
+                "title": r["title"], 
+                "developer": r["developer"],
+                "score": r["score"], 
+                "platform": 'Google Play',
+                "match_score": fuzz.token_set_ratio(query, r['title']),
+                "icon": r["icon"]
+            } for r in gp_results if r.get("score", 0) > 0]
                     
         except Exception as e:
             st.error(f"Ошибка поиска в Google Play: {str(e)}")
@@ -90,7 +85,7 @@ def main():
                 "url": r["trackViewUrl"],
                 "platform": 'App Store',
                 "match_score": r['match_score'],
-                "icon": r["icon"]  # Добавляем URL иконки
+                "icon": r["icon"]
             } for r in processed if r.get('averageUserRating', 0) > 0][:MAX_RESULTS]
             
         except Exception as e:
@@ -151,39 +146,36 @@ def main():
         st.subheader("🔍 Результаты поиска", divider="rainbow")
         st.markdown("""
             <style>
-        .cards-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
-            width: 100%;
-            padding: 16px 0;
-        }
-        
-        .card-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            width: 100%;
-            height: 100%;
-        }
-        
-        .mobile-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 16px;
-            background: white;
-            min-height: 180px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        
-        /* Убираем центрирование из родительского контейнера Streamlit */
-        .stContainer > div {
-            max-width: none !important;
-            padding: 0 !important;
-        }
-        </style>
+            .cards-container {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 24px;
+                width: 100%;
+                padding: 16px 0;
+            }
+            
+            .card-wrapper {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                width: 100%;
+            }
+            
+            .mobile-card {
+                border: 1px solid #e0e0e0;
+                border-radius: 12px;
+                padding: 16px;
+                background: white;
+                min-height: 180px;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+            
+            .st-emotion-cache-1v0mbdj {
+                max-width: none !important;
+            }
+            </style>
         """, unsafe_allow_html=True)
 
         if not results["google_play"] and not results["app_store"]:
@@ -193,8 +185,7 @@ def main():
         all_results = results["google_play"] + results["app_store"]
         all_results.sort(key=lambda x: (-x['match_score'], -x['score']))
 
-        container = st.container()
-        with container:
+        with st.container():
             st.markdown('<div class="cards-container">', unsafe_allow_html=True)
             
             for app in all_results:
@@ -208,36 +199,36 @@ def main():
                     'App Store': {'bg': '#fde8ef', 'color': '#ff2d55'}
                 }[app['platform']]
                 
-                st.markdown('<div class="card-wrapper">', unsafe_allow_html=True)
-                
                 card_html = f"""
-                <div class="mobile-card {'selected-card' if is_selected else ''}" style="max-width: 350px; width: 100%; margin: auto;">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                <div class="mobile-card">
+                    <div style="display: flex; align-items: center; gap: 12px;">
                         <img src="{app.get('icon', 'https://via.placeholder.com/50x50?text=No+Icon')}" 
                              alt="Иконка" 
                              style="width: 50px; height: 50px; border-radius: 12px; object-fit: cover;">
                         <div>
-                            <div class="app-title">{app['title']}</div>
-                            <div class="developer">{app['developer']}</div>
+                            <div style="font-weight: 600; font-size: 16px;">{app['title']}</div>
+                            <div style="font-size: 13px; color: #666;">{app['developer']}</div>
                         </div>
                     </div>
-                    <div class="meta-info">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
                         <div style="color: {platform_style['color']}; font-weight: 500;">
                             ★ {app['score']:.1f}
                         </div>
-                        <div class="platform-tag" style="background: {platform_style['bg']}; color: {platform_style['color']};">
+                        <div style="background: {platform_style['bg']}; color: {platform_style['color']}; 
+                             padding: 4px 12px; border-radius: 20px; font-size: 12px;">
                             {app['platform']}
                         </div>
                     </div>
                 </div>
                 """
-                st.markdown(card_html, unsafe_allow_html=True)
-
+                
+                st.markdown(f'<div class="card-wrapper">{card_html}</div>', unsafe_allow_html=True)
+                
                 if st.button(
                     "✓ Выбрано" if is_selected else "Выбрать",
                     key=f"select_{app['id']}",
                     type="primary" if is_selected else "secondary",
-                    use_container_width=False
+                    use_container_width=True
                 ):
                     if app['platform'] == 'Google Play':
                         st.session_state.selected_gp_app = app if not is_selected else None
@@ -245,9 +236,7 @@ def main():
                         st.session_state.selected_ios_app = app if not is_selected else None
                     st.rerun()
             
-                st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)  # Закрываем cards-container
+            st.markdown('</div>', unsafe_allow_html=True)
 
     def get_reviews(app_id: str, platform: str, start_date: datetime.date = None, end_date: datetime.date = None):
         try:
@@ -436,49 +425,28 @@ def main():
     if 'search_results' in st.session_state and selected_count < 2:
         display_search_results(st.session_state.search_results)
 
-        
-    # Блок анализа с идеальным выравниванием
+    # Блок анализа
     if selected_count == 2:
         with st.container():
-            # Сбрасываем возможные стилевые конфликты
-            st.markdown("""
-            <style>
-                div[data-testid="stHorizontalBlock"] {
-                    align-items: baseline !important;
-                    gap: 0.5rem;
-                }
-                div[data-testid="column"] {
-                    padding-bottom: 0 !important;
-                }
-            </style>
-            """, unsafe_allow_html=True)
-
-            # Создаем новый контейнер с чистой структурой
-            main_cols = st.columns([4, 4, 4])
+            main_cols = st.columns([3, 3, 2])
             
-            # Блок дат
             with main_cols[0]:
                 start_date = st.date_input(
                     "Начальная дата",
-                    value=datetime.date.today()-datetime.timedelta(days=30),
-                    key="unique_start_date"
+                    value=datetime.date.today()-datetime.timedelta(days=30)
                 )
             
             with main_cols[1]:
                 end_date = st.date_input(
                     "Конечная дата",
-                    value=datetime.date.today(),
-                    key="unique_end_date"
+                    value=datetime.date.today()
                 )
             
-            # Блок кнопки с абсолютным позиционированием
             with main_cols[2]:
-                st.write(" ")
                 if st.button(
                     "🚀 Запустить анализ",
                     use_container_width=True,
-                    type="primary",
-                    key="unique_analyze_btn"
+                    type="primary"
                 ):
                     with st.spinner("Анализ отзывов..."):
                         all_reviews = []
@@ -502,7 +470,6 @@ def main():
                             st.session_state.analysis_data = analyze_reviews(st.session_state.filtered_reviews)
                         except Exception as e:
                             st.error(f"Ошибка анализа: {str(e)}")
-                st.markdown('</div>', unsafe_allow_html=True)
 
     # Отображение результатов анализа
     if 'analysis_data' in st.session_state:
