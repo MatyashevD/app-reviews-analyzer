@@ -177,6 +177,26 @@ def main():
                     font-size: 12px;
                     display: inline-block;
                 }
+                /* Новые стили для кнопок */
+                .app-card button {
+                    width: 100% !important;
+                    border: 1px solid #36c55f !important;
+                    color: #36c55f !important;
+                    background: white !important;
+                    margin-top: 12px !important;
+                    transition: all 0.2s !important;
+                }
+            
+                .app-card button:hover {
+                    background: #f5f5f5 !important;
+                    color: #36c55f !important;
+                }
+            
+                .app-card button:has(div:contains("✓ Выбрано")) {
+                    background: #36c55f !important;
+                    color: white !important;
+                    border-color: #36c55f !important;
+                }
             </style>
         """
         st.markdown(custom_css, unsafe_allow_html=True)
