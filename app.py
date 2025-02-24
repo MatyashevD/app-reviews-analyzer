@@ -87,7 +87,7 @@ def main():
                 "score": r.get("averageUserRating", 0),
                 "url": r["trackViewUrl"],
                 "platform": 'App Store',
-                "match_score": r['match_score']
+                "match_score": r['match_score'],
                 "icon": r["icon"]  # Добавляем URL иконки
             } for r in processed if r.get('averageUserRating', 0) > 0][:MAX_RESULTS]
             
