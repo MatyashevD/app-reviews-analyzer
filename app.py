@@ -220,7 +220,7 @@ def main():
                                 st.session_state.selected_ios_app = app if not is_selected else None
                             st.rerun()
 
-        render_platform(" App Store", results["app_store"], "ios", "#ff2d55", "#fde8ef")
+        render_platform(" App Store", results["app_store"], "ios", "#399eff", "#fde8ef")
         render_platform("📲 Google Play", results["google_play"], "gp", "#36c55f", "#e8f0fe")
 
         if not results["app_store"] and not results["google_play"]:
