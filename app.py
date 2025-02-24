@@ -145,7 +145,7 @@ def main():
     def display_search_results(results: dict):
         st.subheader("🔍 Результаты поиска", divider="rainbow")
 
-        # CSS стили
+        # CSS стили для карточек
         custom_css = """
             <style>
                 .horizontal-scroll {
@@ -160,10 +160,11 @@ def main():
                     width: 260px;
                     border: 1px solid #e0e0e0;
                     border-radius: 12px;
-                    padding: 16px;
+                    padding: 12px;
                     background: white;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
                     text-align: left;
+                    font-family: Arial, sans-serif;
                 }
                 .app-card img {
                     width: 50px; 
@@ -180,6 +181,8 @@ def main():
             </style>
         """
 
+        st.markdown(custom_css, unsafe_allow_html=True)
+
         def render_platform(platform_name, platform_data, platform_key, color, bg_color):
             if platform_data:
                 st.markdown(f"### {platform_name}")
@@ -194,11 +197,11 @@ def main():
                         # Отображение карточки
                         st.markdown(f"""
                         <div class="app-card">
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
-                                <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <img src="{app.get('icon', 'https://via.placeholder.com/50')}" alt="App Icon">
                                 <div>
-                                    <div style="font-weight: 600; font-size: 16px;">{app['title']}</div>
-                                    <div style="font-size: 13px; color: #666;">{app['developer']}</div>
+                                    <div style="font-weight: 600; font-size: 14px;">{app['title']}</div>
+                                    <div style="font-size: 12px; color: #666;">{app['developer']}</div>
                                 </div>
                             </div>
                             <div style="color: {color}; font-weight: 500; font-size: 14px; margin-bottom: 10px;">
@@ -225,6 +228,7 @@ def main():
 
         if not results["app_store"] and not results["google_play"]:
             st.warning("😞 Приложения не найдены")
+
 
     def get_reviews(app_id: str, platform: str, start_date: datetime.date = None, end_date: datetime.date = None):
         try:
