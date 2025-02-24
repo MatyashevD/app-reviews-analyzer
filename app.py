@@ -145,7 +145,7 @@ def main():
     def display_search_results(results: dict):
         st.subheader("🔍 Результаты поиска", divider="rainbow")
 
-        # CSS стили для карточек
+        # CSS стили для карточек и горизонтального скролла
         custom_css = """
             <style>
                 .horizontal-scroll {
@@ -154,7 +154,6 @@ def main():
                     white-space: nowrap;
                     padding: 10px 0;
                     gap: 20px;
-                    scroll-snap-type: x mandatory;
                 }
                 .app-card {
                     flex: 0 0 260px;
@@ -165,7 +164,6 @@ def main():
                     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
                     text-align: left;
                     font-family: Arial, sans-serif;
-                    scroll-snap-align: start;
                 }
                 .app-card img {
                     width: 50px; 
