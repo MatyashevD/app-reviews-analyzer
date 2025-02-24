@@ -30,7 +30,7 @@ def main():
         spacy.cli.download("ru_core_news_sm")
         nlp = spacy.load("ru_core_news_sm")
 
-    MAX_RESULTS = 8
+    MAX_RESULTS = 5
     DEFAULT_LANG = 'ru'
     DEFAULT_COUNTRY = 'ru'
 
