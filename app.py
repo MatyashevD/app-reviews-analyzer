@@ -145,31 +145,39 @@ def main():
     def display_search_results(results: dict):
         st.subheader("🔍 Результаты поиска", divider="rainbow")
         st.markdown("""
-            <style>
-            .platform-section {
-                margin-bottom: 40px;
-            }
-            .scroll-container {
-                width: 100%;
-                overflow-x: auto;
-                padding-bottom: 20px;
-            }
-            .cards-row {
-                display: inline-flex;
-                gap: 20px;
-                padding: 10px 5px;
-            }
-            .mobile-card {
-                flex: 0 0 280px;
-                border: 1px solid #e0e0e0;
-                border-radius: 12px;
-                padding: 16px;
-                background: white;
-                min-height: 160px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            }
-            </style>
-        """, unsafe_allow_html=True)
+        <style>
+        /* Основной контейнер для горизонтальной прокрутки */
+        .scroll-container {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 20px;
+        }
+
+        /* Строка карточек */
+        .cards-row {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 20px;
+            padding: 10px 5px;
+        }
+
+        /* Индивидуальная карточка */
+        .mobile-card {
+            flex: 0 0 300px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            background: white;
+            min-height: 160px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        /* Переопределение стилей Streamlit */
+        .stMarkdown {
+            flex-shrink: 0 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
         # Секция App Store
         if results["app_store"]:
