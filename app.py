@@ -181,7 +181,7 @@ def main():
                 max-width: 350px;  /* Ограничиваем максимальную ширину кнопки до ширины карточки */
                 width: 100%;
                 margin-top: 8px;  /* Легкое смещение сверху */
-                align-self: center;
+                margin: 0 auto;
             }
             
             @media (max-width: 1200px) {
@@ -249,7 +249,7 @@ def main():
                     "✓ Выбрано" if is_selected else "Выбрать",
                     key=f"select_{app['id']}",
                     type="primary" if is_selected else "secondary",
-                    use_container_width=True
+                    use_container_width=False
                 ):
                     if app['platform'] == 'Google Play':
                         st.session_state.selected_gp_app = app if not is_selected else None
