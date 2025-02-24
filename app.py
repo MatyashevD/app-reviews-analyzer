@@ -461,7 +461,7 @@ def main():
             with main_cols[0]:
                 start_date = st.date_input(
                     "Начальная дата",
-                    value=datetime.date.today()-datetime.timedelta(days=30)
+                    value=datetime.date.today()-datetime.timedelta(days=30))
             
             with main_cols[1]:
                 end_date = st.date_input(
