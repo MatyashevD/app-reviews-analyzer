@@ -214,7 +214,7 @@ def main():
                     </div>
                     """
                     
-                    st.markdown(card_html, unsafe_allow_html=True)
+                    st.markdown(card_html, unsafe_allow_html=False)
                     
                     if st.button(
                         "✓ Выбрано" if is_selected else "Выбрать",
