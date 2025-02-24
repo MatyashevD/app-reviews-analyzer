@@ -154,10 +154,10 @@ def main():
                     white-space: nowrap;
                     padding: 10px 0;
                     gap: 20px;
+                    scroll-snap-type: x mandatory;
                 }
                 .app-card {
-                    display: inline-block;
-                    width: 260px;
+                    flex: 0 0 260px;
                     border: 1px solid #e0e0e0;
                     border-radius: 12px;
                     padding: 12px;
@@ -165,6 +165,7 @@ def main():
                     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
                     text-align: left;
                     font-family: Arial, sans-serif;
+                    scroll-snap-align: start;
                 }
                 .app-card img {
                     width: 50px; 
@@ -180,18 +181,15 @@ def main():
                 }
             </style>
         """
-
         st.markdown(custom_css, unsafe_allow_html=True)
 
         def render_platform(platform_name, platform_data, platform_key, color, bg_color):
             if platform_data:
                 st.markdown(f"### {platform_name}")
+                with st.container():
+                    st.markdown('<div class="horizontal-scroll">', unsafe_allow_html=True)
 
-                # Создаем горизонтальный контейнер с колонками для карточек
-                cols = st.columns(len(platform_data))
-
-                for idx, app in enumerate(platform_data):
-                    with cols[idx]:
+                    for app in platform_data:
                         is_selected = st.session_state.get(f"selected_{platform_key}") == app['id']
                         
                         # Отображение карточки
@@ -210,17 +208,16 @@ def main():
                             <div class="platform-badge" style="background: {bg_color}; color: {color};">
                                 {platform_name}
                             </div>
+                            <br>
+                            <form action="#" method="post">
+                                <input type="submit" value="{ '✓ Выбрано' if is_selected else 'Выбрать' }" 
+                                    style="width: 100%; margin-top: 10px; padding: 6px; background: {color}; 
+                                        color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            </form>
                         </div>
                         """, unsafe_allow_html=True)
-                        
-                        # Отображение кнопки "Выбрать"
-                        if st.button(
-                            "✓ Выбрано" if is_selected else "Выбрать",
-                            key=f"{platform_key}_{app['id']}",
-                            use_container_width=True
-                        ):
-                            st.session_state[f"selected_{platform_key}"] = app['id'] if not is_selected else None
-                            st.rerun()
+                    
+                    st.markdown('</div>', unsafe_allow_html=True)
 
         # Рендеринг платформ
         render_platform("📱 App Store", results["app_store"], "ios", "#ff2d55", "#fde8ef")
