@@ -205,6 +205,7 @@ def main():
                         </div>
                     </div>
                     """
+                    
                     st.markdown(card_html, unsafe_allow_html=True)
                     
                     if st.button(
