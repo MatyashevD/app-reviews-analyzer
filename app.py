@@ -55,8 +55,7 @@ def main():
         try:
             app_store = AppStore(country="ru", app_name=query)
             app_store.search()
-            ios_data = {"results": app_store.results}
-            itunes_response = requests.get(   
+            ios_data = {"results": app_store.results}  
             
             sorted_results = sorted(ios_data.get("results", []), key=lambda x: x['trackName'])
             grouped = groupby(sorted_results, key=lambda x: x['trackName'])
