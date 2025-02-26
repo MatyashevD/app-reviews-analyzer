@@ -7,7 +7,7 @@ from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
 from collections import Counter
-from fuzzywuzzy import fuzz
+from rapidfuzz import fuzz
 from itertools import groupby
 
 def main():
