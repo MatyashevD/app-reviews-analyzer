@@ -53,19 +53,10 @@ def main():
             st.error(f"Ошибка поиска в Google Play: {str(e)}")
         
         try:
-            itunes_response = requests.get(
-                "https://itunes.apple.com/search",
-                params={
-                    "term": query,
-                    "country": DEFAULT_COUNTRY,
-                    "media": "software",
-                    "limit": 20,
-                    "entity": "software,iPadSoftware",
-                    "lang": "ru_ru"
-                },
-                headers={"User-Agent": "Mozilla/5.0"}
-            )
-            ios_data = itunes_response.json()
+            app_store = AppStore(country="ru", app_name=query)
+            app_store.search()
+            ios_data = {"results": app_store.results}
+            itunes_response = requests.get(   
             
             sorted_results = sorted(ios_data.get("results", []), key=lambda x: x['trackName'])
             grouped = groupby(sorted_results, key=lambda x: x['trackName'])
