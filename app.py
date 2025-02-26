@@ -67,18 +67,15 @@ def main():
             )
             ios_data = itunes_response.json()
             
-            sorted_results = sorted(ios_data.get("results", []), 
-                                  key=lambda x: x['trackName'])
+            sorted_results = sorted(ios_data.get("results", []), key=lambda x: x['trackName'])
             grouped = groupby(sorted_results, key=lambda x: x['trackName'])
             
             processed = []
             for name, group in grouped:
-                best_match = max(group, 
-                               key=lambda x: fuzz.token_set_ratio(query, x['trackName']))
-                processed.append(best_match)
-    
-            processed.sort(key=lambda x: fuzz.token_set_ratio(query, x['trackName']), 
-                          reverse=True)
+                best_match = max(group, key=lambda x: fuzz.token_set_ratio(query, x['trackName']))
+                processed.append({**best_match,"match_score": fuzz.token_set_ratio(query, best_match['trackName']),"icon": best_match["artworkUrl512"].replace("512x512bb", "256x256bb")})
+
+            processed.sort(key=lambda x: x['match_score'], reverse=True)
             
             results["app_store"] = [{
                 "id": r["trackId"],
@@ -86,8 +83,9 @@ def main():
                 "developer": r["artistName"],
                 "score": r.get("averageUserRating", 0),
                 "url": r["trackViewUrl"],
-                'platform': 'App Store',
-                'match_score': fuzz.token_set_ratio(query, r['trackName'])
+                "platform": 'App Store',
+                "match_score": r['match_score'],
+                "icon": r["icon"]
             } for r in processed if r.get('averageUserRating', 0) > 0][:MAX_RESULTS]
             
         except Exception as e:
