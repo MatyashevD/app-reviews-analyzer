@@ -53,52 +53,42 @@ def main():
             st.error(f"Ошибка поиска в Google Play: {str(e)}")
         
         try:
-            app_store = AppStore(country="ru", app_name=query)
-            app_store.search()
-            ios_data = {"results": app_store.results}  
-        
-            # Проверка: получили ли мы данные
-            if not ios_data["results"]:
-                st.warning("❗ В App Store не найдено приложений по запросу")
-                return results  # Возвращаем пустой список
-        
-            # Удаляем результаты без 'trackName' (иначе groupby() упадёт)
-            valid_results = [r for r in ios_data["results"] if r.get("trackName")]
-        
-            # Проверка: если после фильтрации ничего не осталось
-            if not valid_results:
-                st.warning("❗ В App Store нет данных с корректными именами приложений")
-                return results  
-        
-            # Сортируем по названию
-            sorted_results = sorted(valid_results, key=lambda x: x['trackName'])
+            itunes_response = requests.get(
+                "https://itunes.apple.com/search",
+                params={
+                    "term": query,
+                    "country": DEFAULT_COUNTRY,
+                    "media": "software",
+                    "limit": 20,
+                    "entity": "software,iPadSoftware",
+                    "lang": "ru_ru"
+                },
+                headers={"User-Agent": "Mozilla/5.0"}
+            )
+            ios_data = itunes_response.json()
+            
+            sorted_results = sorted(ios_data.get("results", []), 
+                                  key=lambda x: x['trackName'])
             grouped = groupby(sorted_results, key=lambda x: x['trackName'])
-        
+            
             processed = []
             for name, group in grouped:
-                group_list = list(group)  # groupby создаёт итератор, преобразуем в список
-                best_match = max(group_list, key=lambda x: fuzz.token_set_ratio(query, x['trackName']))
-                
-                processed.append({
-                    **best_match,
-                    "match_score": fuzz.token_set_ratio(query, best_match['trackName']),
-                    "icon": best_match.get("artworkUrl512", "").replace("512x512bb", "256x256bb")  # Защита от None
-                })
-        
-            # Сортируем по рейтингу соответствия
-            processed.sort(key=lambda x: x['match_score'], reverse=True)
-        
+                best_match = max(group, 
+                               key=lambda x: fuzz.token_set_ratio(query, x['trackName']))
+                processed.append(best_match)
+    
+            processed.sort(key=lambda x: fuzz.token_set_ratio(query, x['trackName']), 
+                          reverse=True)
+            
             results["app_store"] = [{
                 "id": r["trackId"],
                 "title": r["trackName"],
                 "developer": r["artistName"],
                 "score": r.get("averageUserRating", 0),
                 "url": r["trackViewUrl"],
-                "platform": 'App Store',
-                "match_score": r['match_score'],
-                "icon": r["icon"]
+                'platform': 'App Store',
+                'match_score': fuzz.token_set_ratio(query, r['trackName'])
             } for r in processed if r.get('averageUserRating', 0) > 0][:MAX_RESULTS]
-
             
         except Exception as e:
             st.error(f"Ошибка поиска в App Store: {str(e)}")
