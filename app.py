@@ -460,42 +460,54 @@ def main():
             # Добавление точек для релизов
             if release_dates:
                 st.write("Собранные даты релизов:", release_dates)  # Отладка
-
+            
                 # Получаем максимальное значение столбцов
                 max_y = daily_ratings.sum(axis=1).max() if not daily_ratings.empty else 0
-
+            
                 # Собираем уникальные метки для легенды
                 handled_platforms = set()
-
+            
                 for item in release_dates:
+                    date_str = None  # Инициализация переменной
                     try:
-                        date_str = item['date']
-                        platform = item['platform']
-                            
+                        # Проверяем структуру данных
+                        if not isinstance(item, dict) or 'date' not in item:
+                            st.error("Некорректный формат данных релиза")
+                            continue
+            
+                        date_str = item.get('date')
+                        platform = item.get('platform', 'Неизвестная платформа')  # Значение по умолчанию
+            
                         if not date_str or date_str == "N/A":
                             continue
-
+            
+                        # Парсим дату
                         if "T" in date_str:
-                            date_str = date_str.replace('Z', '+00:00')
-                            date = datetime.datetime.fromisoformat(date_str).date()
+                            date = datetime.datetime.fromisoformat(date_str.replace('Z', '+00:00')).date()
                         else:
                             date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-                        
+            
                         if start_date <= date <= end_date:
                             # Определяем цвет и метку
                             color = '#FF0000' if platform == 'Google Play' else '#399eff'
                             label = f'Релиз ({platform})' if platform not in handled_platforms else ""
+            
                             ax.scatter(
-                                date, 
-                                max_y * 1.1,  # Фиксированный отступ сверху
-                                color='red', 
+                                date,
+                                max_y * 1.1,
+                                color=color,
                                 marker='*',
                                 s=200,
-                                zorder=3,  # Поверх других элементов
-                                label='Дата релиза'
+                                zorder=3,
+                                label=label
                             )
+            
+                            if label:
+                                handled_platforms.add(platform)
+            
                     except Exception as e:
-                        st.error(f"Ошибка в дате релиза {date_str}: {str(e)}")
+                        error_msg = f"Ошибка в дате релиза {date_str if date_str else 'неизвестная дата'}: {str(e)}"
+                        st.error(error_msg)
             
             # Настройка осей
             ax.xaxis.set_major_locator(mdates.DayLocator())
