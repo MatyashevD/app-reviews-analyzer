@@ -465,6 +465,7 @@ def main():
                         continue
                     try:
                         if "T" in date_str:
+                            date_str = date_str.replace('Z', '+00:00')
                             date = datetime.datetime.fromisoformat(date_str).date()
                         else:
                             date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
