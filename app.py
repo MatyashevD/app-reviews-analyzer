@@ -468,10 +468,10 @@ def main():
                                 color='black', 
                                 marker='o',
                                 s=150,
-                                label='Дата релиза'
+                                label=f'📅 Релиз {date}'
                             )
-                    except:
-                        pass
+                    except Exception as e:
+                        print(f"Ошибка обработки даты релиза: {date_str} - {e}")
             
             # Настройка осей
             ax.xaxis.set_major_locator(mdates.DayLocator())
