@@ -386,64 +386,46 @@ def main():
                 st.warning("Нет отзывов для отображения")
         
         with tab3:
-            st.subheader("📈 Оценки по дням и даты релизов")
+            # Выбор платформы через радиокнопки
+            selected_platform = st.radio(
+                "Выберите платформу:",
+                ["Google Play", "App Store"],
+                horizontal=True
+            )
             
-            if not filtered_reviews:
-                st.warning("Нет данных для построения графика")
-                return
-            
-            # Получаем start_date и end_date из session_state
-            start_date = st.session_state.get('start_date')
-            end_date = st.session_state.get('end_date')
-
-            # Если даты не заданы, устанавливаем значения по умолчанию
-            if start_date is None:
-                start_date = datetime.date.today() - datetime.timedelta(days=30)  # 30 дней назад
-            if end_date is None:
-                end_date = datetime.date.today()  # Сегодня
-            
-            # Преобразуем даты диапазона, если они в формате строки "YYYY/MM/DD"
-            if isinstance(start_date, str):
-                start_date = datetime.datetime.strptime(start_date, "%Y/%m/%d").date()
-            if isinstance(end_date, str):
-                end_date = datetime.datetime.strptime(end_date, "%Y/%m/%d").date()
-
-            # Отладка - проверяем, какие даты используются
-            print(f"Фильтрация по диапазону: {start_date} - {end_date}")
-
-            # Собираем даты релизов
-            release_dates = []
-            gp_release_dates = st.session_state.get('gp_release_dates', [])
-            ios_release_dates = st.session_state.get('ios_release_dates', [])
-            release_dates = [d for d in gp_release_dates + ios_release_dates if d and d != "N/A"]
-            
-            # Фильтрация отзывов по выбранным датам
-            filtered = [
+            # Фильтрация отзывов по выбранной платформе
+            platform_filtered = [
                 (r[0].date(), r[3]) 
                 for r in filtered_reviews 
-                if r[0] and isinstance(r[0], datetime.datetime) and start_date and end_date and start_date <= r[0].date() <= end_date
+                if r[2] == selected_platform
             ]
             
-            if not filtered:
-                st.warning("Нет данных в выбранном диапазоне")
+            # Фильтрация релизов
+            release_dates = []
+            if selected_platform == "Google Play":
+                release_dates = st.session_state.get('gp_release_dates', [])
+            else:
+                release_dates = st.session_state.get('ios_release_dates', [])
+            
+            # Проверка данных
+            if not platform_filtered:
+                st.warning(f"Нет отзывов для {selected_platform}")
                 return
             
-            # Группировка оценок по дням
-            df = pd.DataFrame(filtered, columns=['date', 'rating'])
+            # Построение графика
+            df = pd.DataFrame(platform_filtered, columns=['date', 'rating'])
             daily_ratings = df.groupby('date')['rating'].value_counts().unstack().fillna(0)
             
-            # Цвета для оценок
+            # Цвета для оценок и платформы
             colors = {
-                1: '#FF0000',  # Красный
-                2: '#FFA500',  # Оранжевый
-                3: '#FFFF00',  # Желтый
-                4: '#90EE90',  # Светло-зеленый
-                5: '#008000'   # Зеленый
+                1: '#FF0000', 2: '#FFA500', 3: '#FFFF00', 
+                4: '#90EE90', 5: '#008000'
             }
+            platform_color = '#36c55f' if selected_platform == "Google Play" else '#399eff'
             
-            # Построение графика
             fig, ax = plt.subplots(figsize=(12, 6))
             bottom = None
+            
             for rating in [1, 2, 3, 4, 5]:
                 if rating in daily_ratings.columns:
                     ax.bar(
@@ -453,67 +435,40 @@ def main():
                         label=f'{rating} звезд',
                         bottom=bottom
                     )
-                    if bottom is None:
-                        bottom = daily_ratings[rating]
-                    else:
-                        bottom += daily_ratings[rating]
+                    bottom = daily_ratings[rating] if bottom is None else bottom + daily_ratings[rating]
             
-            # Добавление точек для релизов
+            # Добавление релизов
             if release_dates:
-                st.write("Собранные даты релизов:", release_dates)
-                
-                max_y = daily_ratings.sum(axis=1).max() if not daily_ratings.empty else 0
-                handled_platforms = set()
-            
+                max_y = daily_ratings.sum(axis=1).max()
                 for item in release_dates:
                     try:
-                        # Проверка формата данных
-                        if not isinstance(item, dict) or 'date' not in item:
-                            st.error(f"Некорректный формат релиза: {item}")
-                            continue
-            
                         date_str = item['date']
-                        platform = item.get('platform', 'Неизвестная платформа')
-            
-                        if not date_str or date_str == "N/A":
-                            continue
-            
-                        # Парсинг даты
                         if "T" in date_str:
                             date = datetime.datetime.fromisoformat(date_str.split("T")[0]).date()
                         else:
                             date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-            
+                        
                         if start_date <= date <= end_date:
-                            # Настройки для платформы
-                            color = '#FF0000' if platform == 'Google Play' else '#399eff'
-                            label = f'Релиз ({platform})' if platform not in handled_platforms else ""
-            
                             ax.scatter(
                                 date,
                                 max_y * 1.1,
-                                color=color,
+                                color=platform_color,
                                 marker='*',
                                 s=200,
                                 zorder=3,
-                                label=label
+                                label='Дата релиза'
                             )
-            
-                            if label:
-                                handled_platforms.add(platform)
-            
                     except Exception as e:
-                        st.error(f"Ошибка обработки релиза: {str(e)}")
-            
-            # Настройка осей
-            ax.xaxis.set_major_locator(mdates.DayLocator())
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-            plt.xticks(rotation=45)
-            plt.legend(title='Легенда', bbox_to_anchor=(1.05, 1))
-            plt.title('Оценки по дням и даты релизов')
-            plt.tight_layout()
-            
-            st.pyplot(fig)      
+                        st.error(f"Ошибка в дате релиза: {str(e)}")
+        
+        # Настройка графика
+        ax.xaxis.set_major_locator(mdates.DayLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        plt.xticks(rotation=45)
+        plt.legend(title='Легенда', bbox_to_anchor=(1.05, 1))
+        plt.title(f'Оценки и релизы ({selected_platform})')
+        plt.tight_layout()
+        st.pyplot(fig)    
 
     # Инициализация состояния сессии
     if 'selected_gp_app' not in st.session_state:
