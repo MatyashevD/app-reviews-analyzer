@@ -382,12 +382,9 @@ def main():
                 st.warning("Нет данных для построения графика")
                 return
             
-            # Собираем даты релизов
-            release_dates = []
-            if st.session_state.get('gp_release_date'):
-                release_dates.append(st.session_state.gp_release_date)
-            if st.session_state.get('ios_release_date'):
-                release_dates.append(st.session_state.ios_release_date)
+            # Получаем start_date и end_date из session_state
+            start_date = st.session_state.get('start_date')
+            end_date = st.session_state.get('end_date')
 
             # Если даты не заданы, устанавливаем значения по умолчанию
             if start_date is None:
@@ -400,11 +397,18 @@ def main():
                 start_date = datetime.datetime.strptime(start_date, "%Y/%m/%d").date()
             if isinstance(end_date, str):
                 end_date = datetime.datetime.strptime(end_date, "%Y/%m/%d").date()
-            
+
+            # Отладка - проверяем, какие даты используются
+            print(f"Фильтрация по диапазону: {start_date} - {end_date}")
+
+            # Собираем даты релизов
+            release_dates = []
+            if st.session_state.get('gp_release_date'):
+                release_dates.append(st.session_state.gp_release_date)
+            if st.session_state.get('ios_release_date'):
+                release_dates.append(st.session_state.ios_release_date)
             
             # Фильтрация отзывов по выбранным датам
-            start_date = st.session_state.get('start_date')
-            end_date = st.session_state.get('end_date')
             filtered = [
                 (r[0].date(), r[3]) 
                 for r in filtered_reviews 
