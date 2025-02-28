@@ -389,6 +389,12 @@ def main():
             if st.session_state.get('ios_release_date'):
                 release_dates.append(st.session_state.ios_release_date)
 
+            # Если даты не заданы, устанавливаем значения по умолчанию
+            if start_date is None:
+                start_date = datetime.date.today() - datetime.timedelta(days=30)  # 30 дней назад
+            if end_date is None:
+                end_date = datetime.date.today()  # Сегодня
+            
             # Преобразуем даты диапазона, если они в формате строки "YYYY/MM/DD"
             if isinstance(start_date, str):
                 start_date = datetime.datetime.strptime(start_date, "%Y/%m/%d").date()
