@@ -223,12 +223,18 @@ def main():
                                 if app and app.get('release_date'):
                                     # Добавляем дату релиза в список вместо перезаписи
                                     st.session_state.gp_release_dates = st.session_state.get('gp_release_dates', [])
-                                    st.session_state.gp_release_dates.append(app['release_date'])
+                                    st.session_state.gp_release_dates.append({
+                                        "date": app['release_date'], 
+                                        "platform": "Google Play"
+                                    })
                             elif platform_key == "ios":
                                 st.session_state.selected_ios_app = app if not is_selected else None
                                 if app and app.get('release_date'):
                                     st.session_state.ios_release_dates = st.session_state.get('ios_release_dates', [])
-                                    st.session_state.ios_release_dates.append(app['release_date'])
+                                    st.session_state.ios_release_dates.append({
+                                        "date": app['release_date'], 
+                                        "platform": "App Store"
+                                    })
                             st.rerun()
 
         render_platform(" App Store", results["app_store"], "ios", "#399eff", "#cce2ff")
