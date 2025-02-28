@@ -464,6 +464,9 @@ def main():
                 # Получаем максимальное значение столбцов
                 max_y = daily_ratings.sum(axis=1).max() if not daily_ratings.empty else 0
 
+                # Собираем уникальные метки для легенды
+                handled_platforms = set()
+
                 for date_str in release_dates:
                     if not date_str or date_str == "N/A":  # Пропускаем некорректные значения
                         continue
