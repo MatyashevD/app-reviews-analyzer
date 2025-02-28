@@ -46,7 +46,7 @@ def main():
                 "title": r["title"], 
                 "developer": r["developer"],
                 "score": r["score"],
-                "release_date": r.get("released", "N/A"),  # Добавлен поиск дат релизов
+                "release_date": r.get("released") or None,  # Добавлен поиск дат релизов
                 "platform": 'Google Play',
                 "match_score": fuzz.token_set_ratio(query, r['title']),
                 "icon": r["icon"]
@@ -85,7 +85,7 @@ def main():
                 "title": r["trackName"],
                 "developer": r["artistName"],
                 "score": r.get("averageUserRating", 0),
-                "release_date": r.get("currentVersionReleaseDate", "N/A"), #Добавлен поиск дат релизов
+                "release_date": r.get("currentVersionReleaseDate") or None, #Добавлен поиск дат релизов
                 "url": r["trackViewUrl"],
                 "platform": 'App Store',
                 "match_score": r['match_score'],
@@ -459,12 +459,13 @@ def main():
                 max_y = daily_ratings.sum(axis=1).max() if not daily_ratings.empty else 0
 
                 for date_str in release_dates:
+                    if not date_str or date_str == "N/A":  # Пропускаем некорректные значения
+                        continue
                     try:
-                        # Очистка даты от лишних символов
-                        clean_date_str = date_str.split("T")[0] if "T" in date_str else date_str
-
-                        # Преобразование в datetime
-                        date = datetime.datetime.strptime(clean_date_str, "%Y-%m-%d").date()
+                        if "T" in date_str:
+                            date = datetime.datetime.fromisoformat(date_str).date()
+                        else:
+                            date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
                         
                         if start_date <= date <= end_date:
                             ax.scatter(
