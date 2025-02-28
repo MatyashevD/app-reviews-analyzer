@@ -221,13 +221,14 @@ def main():
                             if platform_key == "gp":
                                 st.session_state.selected_gp_app = app if not is_selected else None
                                 if app and app.get('release_date'):
-                                    st.session_state.gp_release_date = app['release_date']
-                                    st.toast(f"Дата релиза Google Play: {app['release_date']}")  # Уведомление
+                                    # Добавляем дату релиза в список вместо перезаписи
+                                    st.session_state.gp_release_dates = st.session_state.get('gp_release_dates', [])
+                                    st.session_state.gp_release_dates.append(app['release_date'])
                             elif platform_key == "ios":
                                 st.session_state.selected_ios_app = app if not is_selected else None
                                 if app and app.get('release_date'):
-                                    st.session_state.ios_release_date = app['release_date']
-                                    st.toast(f"Дата релиза App Store: {app['release_date']}")  # Уведомление
+                                    st.session_state.ios_release_dates = st.session_state.get('ios_release_dates', [])
+                                    st.session_state.ios_release_dates.append(app['release_date'])
                             st.rerun()
 
         render_platform(" App Store", results["app_store"], "ios", "#399eff", "#cce2ff")
@@ -404,13 +405,10 @@ def main():
             print(f"Фильтрация по диапазону: {start_date} - {end_date}")
 
             # Собираем даты релизов
-            release_dates = [
-                d for d in [
-                    st.session_state.get('gp_release_date'),
-                    st.session_state.get('ios_release_date')
-                ] 
-                if d and d != "N/A"  # Фильтрация некорректных значений
-            ]
+            release_dates = []
+            gp_release_dates = st.session_state.get('gp_release_dates', [])
+            ios_release_dates = st.session_state.get('ios_release_dates', [])
+            release_dates = [d for d in gp_release_dates + ios_release_dates if d and d != "N/A"]
             
             # Фильтрация отзывов по выбранным датам
             filtered = [
