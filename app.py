@@ -467,6 +467,14 @@ def main():
                 # Собираем уникальные метки для легенды
                 handled_platforms = set()
 
+                for item in release_dates:
+                    try:
+                        date_str = item['date']
+                        platform = item['platform']
+                            
+                        if not date_str or date_str == "N/A":
+                            continue
+
                 for date_str in release_dates:
                     if not date_str or date_str == "N/A":  # Пропускаем некорректные значения
                         continue
@@ -478,6 +486,9 @@ def main():
                             date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
                         
                         if start_date <= date <= end_date:
+                            # Определяем цвет и метку
+                            color = '#FF0000' if platform == 'Google Play' else '#399eff'
+                            label = f'Релиз ({platform})' if platform not in handled_platforms else ""
                             ax.scatter(
                                 date, 
                                 max_y * 1.1,  # Фиксированный отступ сверху
