@@ -405,10 +405,12 @@ def main():
 
             # Собираем даты релизов
             release_dates = []
-            if st.session_state.get('gp_release_date'):
-                release_dates.append(st.session_state.gp_release_date)
-            if st.session_state.get('ios_release_date'):
-                release_dates.append(st.session_state.ios_release_date)
+                d for d in [
+                    st.session_state.get('gp_release_date'),
+                    st.session_state.get('ios_release_date')
+                ] 
+                if d and d != "N/A"  # Фильтрация некорректных значений
+            ]
             
             # Фильтрация отзывов по выбранным датам
             filtered = [
