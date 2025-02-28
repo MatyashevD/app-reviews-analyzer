@@ -457,10 +457,10 @@ def main():
                         if start_date <= date <= end_date:
                             ax.scatter(
                                 date, 
-                                bottom.max() * 1.05,  # Размещаем над столбцами
+                                bottom.max() * 1.2,  # Размещаем над столбцами
                                 color='black', 
                                 marker='o',
-                                s=100,
+                                s=150,
                                 label='Дата релиза'
                             )
                     except:
