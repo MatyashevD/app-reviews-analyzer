@@ -43,7 +43,8 @@ def main():
                 "id": r["appId"], 
                 "title": r["title"], 
                 "developer": r["developer"],
-                "score": r["score"], 
+                "score": r["score"],
+                "release_date": r.get("released", "N/A"),  # Добавлен поиск дат релизов
                 "platform": 'Google Play',
                 "match_score": fuzz.token_set_ratio(query, r['title']),
                 "icon": r["icon"]
@@ -82,6 +83,7 @@ def main():
                 "title": r["trackName"],
                 "developer": r["artistName"],
                 "score": r.get("averageUserRating", 0),
+                "release_date": r.get("currentVersionReleaseDate", "N/A"), #Добавлен поиск дат релизов
                 "url": r["trackViewUrl"],
                 "platform": 'App Store',
                 "match_score": r['match_score'],
