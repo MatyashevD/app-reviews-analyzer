@@ -3,6 +3,8 @@ import streamlit as st
 import requests
 import pandas as pd
 import spacy
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
 from app_store_scraper import AppStore
@@ -218,8 +220,12 @@ def main():
                         ):
                             if platform_key == "gp":
                                 st.session_state.selected_gp_app = app if not is_selected else None
+                                if app and app.get('release_date'):
+                                    st.session_state.gp_release_date = app['release_date']
                             elif platform_key == "ios":
                                 st.session_state.selected_ios_app = app if not is_selected else None
+                                if app and app.get('release_date'):
+                                    st.session_state.ios_release_date = app['release_date']
                             st.rerun()
 
         render_platform(" App Store", results["app_store"], "ios", "#399eff", "#cce2ff")
@@ -335,7 +341,7 @@ def main():
     def display_analysis(analysis: dict, filtered_reviews: list):
         st.header("📊 Результаты анализа", divider="rainbow")
         
-        tab1, tab2 = st.tabs(["Аналитика", "Все отзывы"])
+        tab1, tab2, tab3 = st.tabs(["Аналитика", "Все отзывы", "Графики"])
         
         with tab1:
             cols = st.columns(3)
@@ -368,6 +374,90 @@ def main():
                 st.download_button("📥 Скачать CSV", reviews_df.to_csv(index=False), "отзывы.csv", "text/csv")
             else:
                 st.warning("Нет отзывов для отображения")
+        
+        with tab3:
+            st.subheader("📈 Оценки по дням и даты релизов")
+            
+            if not filtered_reviews:
+                st.warning("Нет данных для построения графика")
+                return
+            
+            # Собираем даты релизов
+            release_dates = []
+            if st.session_state.get('gp_release_date'):
+                release_dates.append(st.session_state.gp_release_date)
+            if st.session_state.get('ios_release_date'):
+                release_dates.append(st.session_state.ios_release_date)
+            
+            # Фильтрация отзывов по выбранным датам
+            start_date = st.session_state.get('start_date')
+            end_date = st.session_state.get('end_date')
+            filtered = [
+                (r[0].date(), r[3]) 
+                for r in filtered_reviews 
+                if start_date <= r[0].date() <= end_date
+            ]
+            
+            if not filtered:
+                st.warning("Нет данных в выбранном диапазоне")
+                return
+            
+            # Группировка оценок по дням
+            df = pd.DataFrame(filtered, columns=['date', 'rating'])
+            daily_ratings = df.groupby('date')['rating'].value_counts().unstack().fillna(0)
+            
+            # Цвета для оценок
+            colors = {
+                1: '#FF0000',  # Красный
+                2: '#FFA500',  # Оранжевый
+                3: '#FFFF00',  # Желтый
+                4: '#90EE90',  # Светло-зеленый
+                5: '#008000'   # Зеленый
+            }
+            
+            # Построение графика
+            fig, ax = plt.subplots(figsize=(12, 6))
+            bottom = None
+            for rating in [1, 2, 3, 4, 5]:
+                if rating in daily_ratings.columns:
+                    ax.bar(
+                        daily_ratings.index,
+                        daily_ratings[rating],
+                        color=colors[rating],
+                        label=f'{rating} звезд',
+                        bottom=bottom
+                    )
+                    if bottom is None:
+                        bottom = daily_ratings[rating]
+                    else:
+                        bottom += daily_ratings[rating]
+            
+            # Добавление точек для релизов
+            if release_dates:
+                for date_str in release_dates:
+                    try:
+                        date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+                        if start_date <= date <= end_date:
+                            ax.scatter(
+                                date, 
+                                bottom.max() * 1.05,  # Размещаем над столбцами
+                                color='black', 
+                                marker='o',
+                                s=100,
+                                label='Дата релиза'
+                            )
+                    except:
+                        pass
+            
+            # Настройка осей
+            ax.xaxis.set_major_locator(mdates.DayLocator())
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+            plt.xticks(rotation=45)
+            plt.legend(title='Легенда', bbox_to_anchor=(1.05, 1))
+            plt.title('Оценки по дням и даты релизов')
+            plt.tight_layout()
+            
+            st.pyplot(fig)      
 
     # Инициализация состояния сессии
     if 'selected_gp_app' not in st.session_state:
