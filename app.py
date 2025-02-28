@@ -475,10 +475,6 @@ def main():
                         if not date_str or date_str == "N/A":
                             continue
 
-                for date_str in release_dates:
-                    if not date_str or date_str == "N/A":  # Пропускаем некорректные значения
-                        continue
-                    try:
                         if "T" in date_str:
                             date_str = date_str.replace('Z', '+00:00')
                             date = datetime.datetime.fromisoformat(date_str).date()
