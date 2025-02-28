@@ -388,6 +388,13 @@ def main():
                 release_dates.append(st.session_state.gp_release_date)
             if st.session_state.get('ios_release_date'):
                 release_dates.append(st.session_state.ios_release_date)
+
+            # Преобразуем даты диапазона, если они в формате строки "YYYY/MM/DD"
+            if isinstance(start_date, str):
+                start_date = datetime.datetime.strptime(start_date, "%Y/%m/%d").date()
+            if isinstance(end_date, str):
+                end_date = datetime.datetime.strptime(end_date, "%Y/%m/%d").date()
+            
             
             # Фильтрация отзывов по выбранным датам
             start_date = st.session_state.get('start_date')
