@@ -221,21 +221,22 @@ def main():
                             if platform_key == "gp":
                                 st.session_state.selected_gp_app = app if not is_selected else None
                                 if app and app.get('release_date'):
-                                    # Добавляем дату релиза в список вместо перезаписи
+                                    # Сохраняем релиз с указанием платформы
                                     st.session_state.gp_release_dates = st.session_state.get('gp_release_dates', [])
                                     st.session_state.gp_release_dates.append({
-                                        "date": app['release_date'], 
-                                        "platform": "Google Play"
+                                        'date': app['release_date'],
+                                        'platform': 'Google Play'  # Добавляем платформу
                                     })
                             elif platform_key == "ios":
                                 st.session_state.selected_ios_app = app if not is_selected else None
                                 if app and app.get('release_date'):
                                     st.session_state.ios_release_dates = st.session_state.get('ios_release_dates', [])
                                     st.session_state.ios_release_dates.append({
-                                        "date": app['release_date'], 
-                                        "platform": "App Store"
+                                        'date': app['release_date'],
+                                        'platform': 'App Store'  # Добавляем платформу
                                     })
                             st.rerun()
+
 
         render_platform(" App Store", results["app_store"], "ios", "#399eff", "#cce2ff")
         render_platform("📲 Google Play", results["google_play"], "gp", "#36c55f", "#e3ffeb")
@@ -459,36 +460,32 @@ def main():
             
             # Добавление точек для релизов
             if release_dates:
-                st.write("Собранные даты релизов:", release_dates)  # Отладка
-            
-                # Получаем максимальное значение столбцов
+                st.write("Собранные даты релизов:", release_dates)
+                
                 max_y = daily_ratings.sum(axis=1).max() if not daily_ratings.empty else 0
-            
-                # Собираем уникальные метки для легенды
                 handled_platforms = set()
             
                 for item in release_dates:
-                    date_str = None  # Инициализация переменной
                     try:
-                        # Проверяем структуру данных
+                        # Проверка формата данных
                         if not isinstance(item, dict) or 'date' not in item:
-                            st.error("Некорректный формат данных релиза")
+                            st.error(f"Некорректный формат релиза: {item}")
                             continue
             
-                        date_str = item.get('date')
-                        platform = item.get('platform', 'Неизвестная платформа')  # Значение по умолчанию
+                        date_str = item['date']
+                        platform = item.get('platform', 'Неизвестная платформа')
             
                         if not date_str or date_str == "N/A":
                             continue
             
-                        # Парсим дату
+                        # Парсинг даты
                         if "T" in date_str:
-                            date = datetime.datetime.fromisoformat(date_str.replace('Z', '+00:00')).date()
+                            date = datetime.datetime.fromisoformat(date_str.split("T")[0]).date()
                         else:
                             date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
             
                         if start_date <= date <= end_date:
-                            # Определяем цвет и метку
+                            # Настройки для платформы
                             color = '#FF0000' if platform == 'Google Play' else '#399eff'
                             label = f'Релиз ({platform})' if platform not in handled_platforms else ""
             
@@ -506,8 +503,7 @@ def main():
                                 handled_platforms.add(platform)
             
                     except Exception as e:
-                        error_msg = f"Ошибка в дате релиза {date_str if date_str else 'неизвестная дата'}: {str(e)}"
-                        st.error(error_msg)
+                        st.error(f"Ошибка обработки релиза: {str(e)}")
             
             # Настройка осей
             ax.xaxis.set_major_locator(mdates.DayLocator())
