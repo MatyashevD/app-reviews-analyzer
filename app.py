@@ -222,10 +222,12 @@ def main():
                                 st.session_state.selected_gp_app = app if not is_selected else None
                                 if app and app.get('release_date'):
                                     st.session_state.gp_release_date = app['release_date']
+                                    st.toast(f"Дата релиза Google Play: {app['release_date']}")  # Уведомление
                             elif platform_key == "ios":
                                 st.session_state.selected_ios_app = app if not is_selected else None
                                 if app and app.get('release_date'):
                                     st.session_state.ios_release_date = app['release_date']
+                                    st.toast(f"Дата релиза App Store: {app['release_date']}")  # Уведомление
                             st.rerun()
 
         render_platform(" App Store", results["app_store"], "ios", "#399eff", "#cce2ff")
