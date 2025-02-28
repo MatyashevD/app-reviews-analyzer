@@ -453,27 +453,31 @@ def main():
             
             # Добавление точек для релизов
             if release_dates:
-                print(f"Даты релизов: {release_dates}")  # Отладка
-                
+                st.write("Собранные даты релизов:", release_dates)  # Отладка
+
+                # Получаем максимальное значение столбцов
+                max_y = daily_ratings.sum(axis=1).max() if not daily_ratings.empty else 0
+
                 for date_str in release_dates:
                     try:
-                        # Проверяем формат даты
-                        if "/" in date_str:  
-                            date = datetime.datetime.strptime(date_str, "%Y/%m/%d").date()
-                        else:
-                            date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+                        # Очистка даты от лишних символов
+                        clean_date_str = date_str.split("T")[0] if "T" in date_str else date_str
+
+                        # Преобразование в datetime
+                        date = datetime.datetime.strptime(clean_date_str, "%Y-%m-%d").date()
                         
                         if start_date <= date <= end_date:
                             ax.scatter(
                                 date, 
-                                bottom.max() * 1.2,  # Размещаем над столбцами
-                                color='black', 
-                                marker='o',
-                                s=150,
-                                label=f'📅 Релиз {date}'
+                                max_y * 1.1,  # Фиксированный отступ сверху
+                                color='red', 
+                                marker='*',
+                                s=200,
+                                zorder=3,  # Поверх других элементов
+                                label='Дата релиза'
                             )
                     except Exception as e:
-                        print(f"Ошибка обработки даты релиза: {date_str} - {e}")
+                        st.error(f"Ошибка в дате релиза {date_str}: {str(e)}")
             
             # Настройка осей
             ax.xaxis.set_major_locator(mdates.DayLocator())
