@@ -404,7 +404,7 @@ def main():
             print(f"Фильтрация по диапазону: {start_date} - {end_date}")
 
             # Собираем даты релизов
-            release_dates = []
+            release_dates = [
                 d for d in [
                     st.session_state.get('gp_release_date'),
                     st.session_state.get('ios_release_date')
