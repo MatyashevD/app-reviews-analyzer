@@ -451,9 +451,16 @@ def main():
             
             # Добавление точек для релизов
             if release_dates:
+                print(f"Даты релизов: {release_dates}")  # Отладка
+                
                 for date_str in release_dates:
                     try:
-                        date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+                        # Проверяем формат даты
+                        if "/" in date_str:  
+                            date = datetime.datetime.strptime(date_str, "%Y/%m/%d").date()
+                        else:
+                            date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+                        
                         if start_date <= date <= end_date:
                             ax.scatter(
                                 date, 
