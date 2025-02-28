@@ -395,7 +395,7 @@ def main():
             filtered = [
                 (r[0].date(), r[3]) 
                 for r in filtered_reviews 
-                if start_date <= r[0].date() <= end_date
+                if r[0] and isinstance(r[0], datetime.datetime) and start_date and end_date and start_date <= r[0].date() <= end_date
             ]
             
             if not filtered:
