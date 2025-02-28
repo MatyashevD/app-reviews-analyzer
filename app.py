@@ -245,8 +245,7 @@ def main():
                     lang=DEFAULT_LANG,
                     country=DEFAULT_COUNTRY,
                     count=1000,
-                    sort=Sort.NEWEST,
-                    version_history=True
+                    sort=Sort.NEWEST
                 )
                 if start_date and end_date:
                     result = [r for r in result if start_date <= r['at'].date() <= end_date]
