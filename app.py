@@ -282,7 +282,6 @@ def main():
                 retries=5,
                 retries_backoff_factor=2,
                 retries_backoff_max=20,
-                timeout=15
             )
 
             try:
