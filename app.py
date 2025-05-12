@@ -264,12 +264,29 @@ def main():
                     st.error("Не выбрано приложение из App Store")
                     return []
 
+            # Добавляем новую функцию внутри get_reviews
+            def get_appstore_reviews(app_id: str, app_name: str, country: str = 'ru', max_reviews: int = 200):
+                try:
+                    app = AppStore(
+                        country=country.lower(),
+                        app_name=app_name,
+                        app_id=str(app_id)
+                    
+                    app.review(
+                        how_many=max_reviews,
+                        sleep=random.uniform(2, 4))
+                    
+                    return app.reviews
+                except Exception as e:
+                    st.error(f"Ошибка парсинга App Store: {str(e)}")
+                    return []
+
+            # Используем новую функцию
             reviews = get_appstore_reviews(
                 app_id=selected_app['id'],
                 app_name=selected_app['title'],
                 country=DEFAULT_COUNTRY,
-                max_reviews=300
-            )
+                max_reviews=300)
 
             # Фильтрация по дате
             if start_date and end_date:
@@ -278,8 +295,7 @@ def main():
                     if start_date <= r['date'].date() <= end_date
                 ]
 
-            return [(r['date'], r['review'], 'App Store', r['rating']) 
-                  for r in reviews]           
+            return [(r['date'], r['review'], 'App Store', r['rating']) for r in reviews]       
                     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
