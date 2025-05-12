@@ -301,7 +301,7 @@ def main():
                         country=country.lower(),
                         app_name=app_name,
                         app_id=str(app_id)
-                    
+                    )
                     # Прогрессивная загрузка
                     reviews = []
                     for chunk in [30, 30, 40]:  # 3 запроса с разным количеством
