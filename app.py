@@ -264,42 +264,43 @@ def main():
                     st.error("Не выбрано приложение из App Store")
                     return []
 
-                # Настраиваем кастомные заголовки
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Safari/605.1.15',
-                    'Accept-Language': 'ru-RU,ru;q=0.9',
-                    'X-Apple-Store-Front': '143469-6,32',
-                }
-                # Используем сессию с повторными попытками
-                with requests.Session() as session:
-                    session.headers.update(headers)
-                    
-                    app_store_app = AppStore(
-                        country=DEFAULT_COUNTRY, 
-                        app_id=str(app_id),  # Приводим к строке
-                        app_name=selected_app['title'],
-                        session=session  # Передаем кастомную сессию
-                    )
-                    
-                    # Парсим с задержкой и обработкой ошибок
-                    try:
-                        app_store_app.review(
-                            how_many=1000,
-                            sleep=2  # Задержка между запросами
-                        )
-                    except Exception as e:
-                        st.error(f"Ошибка парсинга: {str(e)}")
-                        if hasattr(e, 'response'):
-                            st.error(f"Статус код: {e.response.status_code}")
-                        return []
-    
-                reviews = app_store_app.reviews
-                if start_date and end_date:
-                    reviews = [r for r in reviews 
-                             if start_date <= r['date'].date() <= end_date]
-                
-                return [(r['date'], r['review'], 'App Store', r['rating']) 
-                      for r in reviews]   
+            # Создаем кастомный объект Session с заголовками
+            session = requests.Session()
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Safari/605.1.15',
+                'Accept-Language': 'ru-RU,ru;q=0.9',
+                'X-Apple-Store-Front': '143469-6,32',
+            })
+
+            # Монки-патчинг для использования нашей сессии
+            original_get = AppStore._get
+            AppStore._get = lambda self, url: session.get(url).json()
+
+            app_store_app = AppStore(
+                country=DEFAULT_COUNTRY,
+                app_name=selected_app['title'],
+                app_id=str(app_id)
+            )
+
+            try:
+                app_store_app.review(
+                    how_many=1000,
+                    sleep=2
+                )
+            except Exception as e:
+                st.error(f"Ошибка парсинга: {str(e)}")
+                return []
+            finally:
+                # Восстанавливаем оригинальный метод
+                AppStore._get = original_get
+
+            reviews = app_store_app.reviews
+            if start_date and end_date:
+                reviews = [r for r in reviews 
+                         if start_date <= r['date'].date() <= end_date]
+            
+            return [(r['date'], r['review'], 'App Store', r['rating']) 
+                  for r in reviews]
         
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
