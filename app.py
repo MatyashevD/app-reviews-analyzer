@@ -296,7 +296,7 @@ def main():
                 country=DEFAULT_COUNTRY.lower(),
                 app_name=selected_app['title'],
                 app_id=str(app_id)
-            
+            )
             try:
                 with st.spinner("🔄 Получаем отзывы..."):
                     app_store_app.review(
