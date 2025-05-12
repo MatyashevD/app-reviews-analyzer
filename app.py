@@ -267,45 +267,50 @@ def main():
                     st.error("Не выбрано приложение из App Store")
                     return []
 
-            # Новый парсер
-            app_store_app = AppStore(
-                country=DEFAULT_COUNTRY.lower(),
-                app_name=selected_app['title'],
-                app_id=str(selected_app['id'])
+            # Создаем сессию с настройками для избежания блокировки
+            session = AppStoreSession(
+                delay=random.uniform(0.5, 1.5),
+                delay_jitter=0.3,
+                retries=5,
+                retries_backoff_factor=2,
+                retries_backoff_max=20,
+                timeout=15
             )
-            
+
             try:
-                app_store_app.get_reviews(
-                    limit=1000,
-                    sleep=random.uniform(1, 3)
+                app_entry = AppStoreEntry(
+                    app_id=app_id,
+                    country=DEFAULT_COUNTRY.lower(),
+                    session=session
                 )
             except Exception as e:
-                st.error(f"Ошибка парсинга: {str(e)}")
+                st.error(f"Приложение не найдено в App Store: {str(e)}")
                 return []
 
             reviews = []
-            for r in app_store_app.reviews:
-                try:
-                    date = datetime.datetime.strptime(r['date'], '%Y-%m-%dT%H:%M:%SZ')
-                    if start_date and end_date:
-                        if start_date <= date.date() <= end_date:
-                            reviews.append((
-                                date,
-                                r['review'],
-                                'App Store',
-                                r['rating']
-                            ))
-                    else:
+            try:
+                # Получаем отзывы с ограничением и фильтрацией
+                for review in app_entry.reviews(limit=1000):
+                    try:
+                        review_date = review.date.date()
+                        if start_date and end_date:
+                            if not (start_date <= review_date <= end_date):
+                                continue
+                        
                         reviews.append((
-                            date,
-                            r['review'],
+                            review.date,
+                            review.review,
                             'App Store',
-                            r['rating']
+                            review.rating
                         ))
-                except Exception as e:
-                    continue
-                    
-            return reviews
+                    except Exception as e:
+                        continue
+                        
+                return reviews
+
+            except Exception as e:
+                st.error(f"Ошибка получения отзывов: {str(e)}")
+                return []
                     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
