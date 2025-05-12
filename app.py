@@ -8,6 +8,7 @@ import pandas as pd
 import spacy
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from app_store_web_scraper import AppStore
 from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
 from collections import Counter
