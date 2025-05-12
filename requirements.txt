@@ -1,16 +1,21 @@
-streamlit>=1.27.0
+streamlit==1.32.2
 google-play-scraper==1.2.7
-spacy
+spacy==3.7.4
+thinc==8.2.1
 pandas==2.2.3
-matplotlib==3.10.0
-python-dateutil==2.9.0
-python-Levenshtein>=0.21.1
-openai>=1.0.0
-python-dotenv>=1.0.0
-transformers
-torch
-textblob
-rapidfuzz
-requests>=2.31.0
-pillow>=7.1.0,<10  # Используйте более новую версию Pillow
+matplotlib==3.8.2
+python-dateutil==2.9.0.post0
+python-Levenshtein==0.23.0
+openai==1.14.2
+python-dotenv==1.0.1
+transformers==4.38.2
+torch==2.2.1
+textblob==0.17.1
+rapidfuzz==3.6.1
+requests==2.31.0
+pillow==9.5.0
+numpy==1.24.4
+tqdm==4.66.2  # Обязательно для корректной установки моделей spaCy
+
+# Модель для spaCy (совместима с версией 3.7.4)
 ru-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/ru_core_news_sm-3.7.0/ru_core_news_sm-3.7.0.tar.gz
