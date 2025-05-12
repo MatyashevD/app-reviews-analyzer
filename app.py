@@ -38,6 +38,14 @@ def main():
     MAX_RESULTS = 5
     DEFAULT_LANG = 'ru'
     DEFAULT_COUNTRY = 'ru'
+    
+    def extract_app_store_id(url: str) -> str:
+    """Извлекает App Store ID из URL"""
+    parts = url.strip().split('/')
+    for part in reversed(parts):
+        if part.isdigit():
+            return part
+    return None
 
     def search_apps(query: str):
         results = {"google_play": [], "app_store": []}
