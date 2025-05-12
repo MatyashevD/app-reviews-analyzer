@@ -264,44 +264,61 @@ def main():
                     st.error("Не выбрано приложение из App Store")
                     return []
 
-            # Создаем кастомный объект Session с заголовками
+            # Конфигурация заголовков и сессии
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+                'Accept': 'application/json',
+                'X-Apple-Store-Front': '143469-6,32 raw',
+                'Accept-Language': 'ru-RU,ru;q=0.9'
+            }
+
             session = requests.Session()
-            session.headers.update({
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Safari/605.1.15',
-                'Accept-Language': 'ru-RU,ru;q=0.9',
-                'X-Apple-Store-Front': '143469-6,32',
-            })
+            session.headers.update(headers)
+            session.mount('https://', requests.adapters.HTTPAdapter(max_retries=3))
 
-            # Монки-патчинг для использования нашей сессии
-            original_get = AppStore._get
-            AppStore._get = lambda self, url: session.get(url).json()
+            # Монки-патчинг метода получения данных
+            original_fetch = AppStore._fetch_url
 
+            def custom_fetch(self, url):
+                try:
+                    response = session.get(url, timeout=15)
+                    response.raise_for_status()
+                    return response.json()
+                except Exception as e:
+                    st.error(f"Ошибка запроса: {str(e)}")
+                    return {}
+            AppStore._fetch_url = custom_fetch
+
+            # Инициализация парсера
             app_store_app = AppStore(
-                country=DEFAULT_COUNTRY,
+                country=DEFAULT_COUNTRY.lower(),
                 app_name=selected_app['title'],
                 app_id=str(app_id)
             )
 
             try:
-                app_store_app.review(
-                    how_many=1000,
-                    sleep=2
-                )
+                with st.spinner("Получаем отзывы из App Store..."):
+                    app_store_app.review(
+                        how_many=1000,
+                        sleep=random.uniform(2.5, 4.5),
+                        after=start_date or datetime.datetime.now() - datetime.timedelta(days=365)
+                    )
             except Exception as e:
                 st.error(f"Ошибка парсинга: {str(e)}")
                 return []
             finally:
-                # Восстанавливаем оригинальный метод
-                AppStore._get = original_get
+                AppStore._fetch_url = original_fetch  # Восстановление оригинального метода
 
+            # Фильтрация отзывов
             reviews = app_store_app.reviews
             if start_date and end_date:
-                reviews = [r for r in reviews 
-                         if start_date <= r['date'].date() <= end_date]
-            
-            return [(r['date'], r['review'], 'App Store', r['rating']) 
-                  for r in reviews]
-        
+                reviews = [
+                    r for r in reviews
+                    if start_date <= r['date'].date() <= end_date
+                ]
+
+            return [(r['date'], r['review'], 'App Store', r['rating']) for r in reviews]                    
+                    
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
             return []
