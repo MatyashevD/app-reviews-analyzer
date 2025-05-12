@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
-from app_store_scraper import AppStore
 from collections import Counter
 from rapidfuzz import fuzz
 from itertools import groupby
