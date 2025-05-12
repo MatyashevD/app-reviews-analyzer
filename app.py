@@ -88,8 +88,8 @@ def main():
                 "title": r["trackName"],
                 "developer": r["artistName"],
                 "score": r.get("averageUserRating", 0),
-                "release_date": r.get("currentVersionReleaseDate") or None, #Добавлен поиск дат релизов
-                "url": r["trackViewUrl"],
+                "release_date": r.get("currentVersionReleaseDate") or None,
+                "url": f"https://apps.apple.com/app/id{r['trackId']}",  # Новый формат URL
                 "platform": 'App Store',
                 "match_score": r['match_score'],
                 "icon": r["icon"]
@@ -267,62 +267,45 @@ def main():
                     st.error("Не выбрано приложение из App Store")
                     return []
 
-            def fetch_appstore_reviews():
+            # Новый парсер
+            app_store_app = AppStore(
+                country=DEFAULT_COUNTRY.lower(),
+                app_name=selected_app['title'],
+                app_id=str(selected_app['id'])
+            )
+            
+            try:
+                app_store_app.get_reviews(
+                    limit=1000,
+                    sleep=random.uniform(1, 3)
+                )
+            except Exception as e:
+                st.error(f"Ошибка парсинга: {str(e)}")
+                return []
+
+            reviews = []
+            for r in app_store_app.reviews:
                 try:
-                    # Конфигурация как для реального браузера
-                    headers = {
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
-                        'Accept-Language': 'ru-RU,ru;q=0.9',
-                        'X-Apple-Store-Front': '143469-6,32 raw',
-                        'Referer': 'https://www.apple.com/',
-                    }
-
-                    # Получаем cookies перед основным запросом
-                    session = requests.Session()
-                    session.get('https://apps.apple.com', headers=headers, timeout=10)
-
-                    # Альтернативный метод получения отзывов
-                    reviews = []
-                    page = 0
-                    while len(reviews) < 100:  # Лимит отзывов
-                        page += 1
-                        url = f"https://amp-api.apps.apple.com/v1/catalog/ru/apps/{selected_app['id']}/reviews"
-                        params = {
-                            'l': 'ru',
-                            'offset': (page-1)*20,
-                            'limit': 20,
-                            'platform': 'web',
-                            'additionalPlatforms': 'appletv,ipad,iphone,mac'
-                        }
-                        
-                        response = session.get(url, headers=headers, params=params, timeout=15)
-                        if response.status_code != 200:
-                            break
-                            
-                        data = response.json()
-                        reviews.extend([{
-                            'date': datetime.datetime.fromisoformat(r['attributes']['createdDate']),
-                            'review': r['attributes']['review'],
-                            'rating': r['attributes']['rating']
-                        } for r in data.get('data', [])])
-
-                        if len(data.get('data', [])) < 20:
-                            break
-
-                        time.sleep(random.uniform(2, 4))
-
-                    return reviews
-
+                    date = datetime.datetime.strptime(r['date'], '%Y-%m-%dT%H:%M:%SZ')
+                    if start_date and end_date:
+                        if start_date <= date.date() <= end_date:
+                            reviews.append((
+                                date,
+                                r['review'],
+                                'App Store',
+                                r['rating']
+                            ))
+                    else:
+                        reviews.append((
+                            date,
+                            r['review'],
+                            'App Store',
+                            r['rating']
+                        ))
                 except Exception as e:
-                    st.error(f"Ошибка парсинга: {str(e)}")
-                    return []
-
-            # Получаем и фильтруем отзывы
-            reviews = fetch_appstore_reviews()
-            if start_date and end_date:
-                reviews = [r for r in reviews if start_date <= r['date'].date() <= end_date]
-
-            return [(r['date'], r['review'], 'App Store', r['rating']) for r in reviews]
+                    continue
+                    
+            return reviews
                     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
