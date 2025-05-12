@@ -276,48 +276,46 @@ def main():
             session.headers.update(headers)
             session.mount('https://', requests.adapters.HTTPAdapter(max_retries=3))
 
-            # Монки-патчинг метода получения данных
-            original_fetch = AppStore._fetch_url
+            # Патчинг через наследование
+            class PatchedAppStore(AppStore):
+                def _get(self, url, params=None):
+                    try:
+                        response = session.get(
+                            url,
+                            params=params,
+                            timeout=15
+                        )
+                        response.raise_for_status()
+                        return response.json()
+                    except Exception as e:
+                        st.error(f"Request to {url} failed: {str(e)}")
+                        return {}
 
-            def custom_fetch(self, url):
-                try:
-                    response = session.get(url, timeout=15)
-                    response.raise_for_status()
-                    return response.json()
-                except Exception as e:
-                    st.error(f"Ошибка запроса: {str(e)}")
-                    return {}
-            AppStore._fetch_url = custom_fetch
-
-            # Инициализация парсера
-            app_store_app = AppStore(
+            # Инициализация модифицированного парсера
+            app_store_app = PatchedAppStore(
                 country=DEFAULT_COUNTRY.lower(),
                 app_name=selected_app['title'],
                 app_id=str(app_id)
-            )
-
+            
             try:
-                with st.spinner("Получаем отзывы из App Store..."):
+                with st.spinner("🔄 Получаем отзывы..."):
                     app_store_app.review(
-                        how_many=1000,
-                        sleep=random.uniform(2.5, 4.5),
-                        after=start_date or datetime.datetime.now() - datetime.timedelta(days=365)
+                        how_many=500,
+                        sleep=random.uniform(3.0, 6.0),
+                        after=datetime.datetime.now() - datetime.timedelta(days=180)
                     )
             except Exception as e:
                 st.error(f"Ошибка парсинга: {str(e)}")
                 return []
-            finally:
-                AppStore._fetch_url = original_fetch  # Восстановление оригинального метода
 
-            # Фильтрация отзывов
+            # Фильтрация результатов
             reviews = app_store_app.reviews
             if start_date and end_date:
-                reviews = [
-                    r for r in reviews
-                    if start_date <= r['date'].date() <= end_date
-                ]
-
-            return [(r['date'], r['review'], 'App Store', r['rating']) for r in reviews]                    
+                reviews = [r for r in reviews 
+                         if start_date <= r['date'].date() <= end_date]
+            
+            return [(r['date'], r['review'], 'App Store', r['rating']) 
+                  for r in reviews]                 
                     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
