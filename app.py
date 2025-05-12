@@ -267,62 +267,61 @@ def main():
                     return []
 
             def get_appstore_reviews(app_id: str, app_name: str, country: str = 'ru', max_reviews: int = 200):
-                last_url = None
                 session = requests.Session()
                 
+                # Конфигурация как в реальном Safari
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'ru-RU,ru;q=0.9',
+                    'X-Apple-Store-Front': '143469-6,32 raw',
+                    'Referer': 'https://www.apple.com/',
+                }
+
+                # Патчинг с сохранением структуры класса
+                original__get = AppStore._get
+                
+                def patched__get(self, url):
+                    try:
+                        response = session.get(url, headers=headers, timeout=15)
+                        response.raise_for_status()
+                        
+                        # Сохраняем ответ для обработки ошибок
+                        self._response = response
+                        return response.json()
+                    except Exception as e:
+                        st.error(f"Ошибка запроса: {str(e)}")
+                        st.error(f"URL: {url}")
+                        return {}
+
+                AppStore._get = patched__get
+
                 try:
-                    headers = {
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                        'Accept-Language': 'ru-RU,ru;q=0.9',
-                        'X-Apple-Store-Front': '143469-6,32 raw',
-                        'Referer': 'https://www.apple.com/',
-                    }
-
-                    original_get = AppStore._get
-                    
-                    def patched_get(self, url):
-                        nonlocal last_url
-                        last_url = url
-                        try:
-                            response = session.get(url, headers=headers, timeout=15)
-                            response.raise_for_status()
-                            return response.json()
-                        except Exception as e:
-                            st.error(f"Ошибка запроса: {str(e)}")
-                            return {}
-
-                    AppStore._get = patched_get
-
-                    # Исправленная инициализация без page_size
                     app = AppStore(
                         country=country.lower(),
                         app_name=app_name,
-                        app_id=str(app_id)  # Убрали параметр page_size
-                    )
-
+                        app_id=str(app_id)
+                    
+                    # Прогрессивная загрузка
                     reviews = []
-                    for _ in range(2):  # 2 запроса по 50 отзывов
+                    for chunk in [30, 30, 40]:  # 3 запроса с разным количеством
                         try:
-                            app.review(how_many=50, sleep=random.uniform(5, 8))
+                            app.review(how_many=chunk, sleep=random.uniform(5, 10))
                             reviews.extend(app.reviews)
-                        except:
+                        except Exception as e:
                             continue
                     
                     return reviews[:max_reviews]
 
                 except Exception as e:
                     st.error(f"Критическая ошибка: {str(e)}")
-                    if last_url:
-                        st.markdown(f"Последний URL: [{last_url}]({last_url})")
                     return []
                 
                 finally:
-                    AppStore._get = original_get
+                    AppStore._get = original__get
 
             # Тест доступности приложения
-            test_url = f"https://apps.apple.com/ru/app/id{selected_app['id']}"
-            st.markdown(f"**Проверьте доступность вручную:** [{test_url}]({test_url})")
+            st.markdown(f"**Проверьте приложение:** [Открыть в App Store](https://apps.apple.com/ru/app/id{selected_app['id']})")
 
             # Получение отзывов
             reviews = get_appstore_reviews(
@@ -337,7 +336,6 @@ def main():
                 reviews = [r for r in reviews if start_date <= r['date'].date() <= end_date]
 
             return [(r['date'], r['review'], 'App Store', r['rating']) for r in reviews]
-
                     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
