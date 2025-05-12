@@ -9,7 +9,7 @@ import spacy
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from app_store_web_scraper import AppStoreEntry
-from app_store_web_scraver.client import AppStoreClient
+from app_store_web_scraper.client import AppStoreClient
 from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
 from collections import Counter
