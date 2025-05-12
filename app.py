@@ -39,8 +39,8 @@ def main():
     DEFAULT_LANG = 'ru'
     DEFAULT_COUNTRY = 'ru'
     
+    #Извлекает App Store ID из URL
     def extract_app_store_id(url: str) -> str:
-    """Извлекает App Store ID из URL"""
     parts = url.strip().split('/')
     for part in reversed(parts):
         if part.isdigit():
