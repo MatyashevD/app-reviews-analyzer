@@ -296,27 +296,21 @@ def main():
 
             reviews = []
             try:
-                # Получаем отзывы с ограничением и фильтрацией
                 for review in app_entry.reviews(limit=1000):
-                    try:
-                        review_date = review.date.date()
-                        if start_date and end_date:
-                            if not (start_date <= review_date <= end_date):
-                                continue
-                        
+                    # Конвертируем в UTC и извлекаем дату
+                    utc_time = review.date.astimezone(datetime.timezone.utc)
+                    review_date = utc_time.date()
+                    
+                    if start_date <= review_date <= end_date:
                         reviews.append((
-                            review.date,
+                            utc_time.replace(tzinfo=None),  # Убираем часовой пояс
                             review.review,
                             'App Store',
                             review.rating
                         ))
-                    except Exception as e:
-                        continue
-                        
                 return reviews
-
             except Exception as e:
-                st.error(f"Ошибка получения отзывов: {str(e)}")
+                st.error(f"Ошибка парсинга отзывов: {str(e)}")
                 return []
                     
         except Exception as e:
