@@ -264,29 +264,49 @@ def main():
                     st.error("Не выбрано приложение из App Store")
                     return []
 
-            # Добавляем новую функцию внутри get_reviews
             def get_appstore_reviews(app_id: str, app_name: str, country: str = 'ru', max_reviews: int = 200):
                 try:
+                    # Конфигурация HTTP-заголовков
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+                        'Accept-Language': 'ru-RU,ru;q=0.9',
+                        'X-Apple-Store-Front': '143469-6,32 raw'
+                    }
+
+                    # Создаем кастомную сессию
+                    session = requests.Session()
+                    session.headers.update(headers)
+
+                    # Монки-патчинг метода получения данных
+                    original_get = AppStore._get
+                    AppStore._get = lambda self, url: session.get(url).json()
+
                     app = AppStore(
                         country=country.lower(),
                         app_name=app_name,
                         app_id=str(app_id)
-                    )
+                    
                     app.review(
                         how_many=max_reviews,
-                        sleep=random.uniform(2, 4))
+                        sleep=random.uniform(3, 5)  # Увеличенная задержка
+                    )
                     
                     return app.reviews
-                except Exception as e:
-                    st.error(f"Ошибка парсинга App Store: {str(e)}")
+                except json.JSONDecodeError:
+                    st.error("Сервер вернул невалидный JSON. Возможна блокировка запросов.")
                     return []
+                except Exception as e:
+                    st.error(f"Ошибка парсинга: {str(e)}")
+                    return []
+                finally:
+                    AppStore._get = original_get  # Восстановление оригинального метода
 
-            # Используем новую функцию
             reviews = get_appstore_reviews(
                 app_id=selected_app['id'],
                 app_name=selected_app['title'],
                 country=DEFAULT_COUNTRY,
-                max_reviews=300)
+                max_reviews=200  # Уменьшенное количество для теста
+            )
 
             # Фильтрация по дате
             if start_date and end_date:
@@ -295,7 +315,7 @@ def main():
                     if start_date <= r['date'].date() <= end_date
                 ]
 
-            return [(r['date'], r['review'], 'App Store', r['rating']) for r in reviews]       
+            return [(r['date'], r['review'], 'App Store', r['rating']) for r in reviews]
                     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
