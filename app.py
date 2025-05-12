@@ -264,58 +264,22 @@ def main():
                     st.error("Не выбрано приложение из App Store")
                     return []
 
-            # Конфигурация заголовков и сессии
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
-                'Accept': 'application/json',
-                'X-Apple-Store-Front': '143469-6,32 raw',
-                'Accept-Language': 'ru-RU,ru;q=0.9'
-            }
-
-            session = requests.Session()
-            session.headers.update(headers)
-            session.mount('https://', requests.adapters.HTTPAdapter(max_retries=3))
-
-            # Патчинг через наследование
-            class PatchedAppStore(AppStore):
-                def _get(self, url, params=None):
-                    try:
-                        response = session.get(
-                            url,
-                            params=params,
-                            timeout=15
-                        )
-                        response.raise_for_status()
-                        return response.json()
-                    except Exception as e:
-                        st.error(f"Request to {url} failed: {str(e)}")
-                        return {}
-
-            # Инициализация модифицированного парсера
-            app_store_app = PatchedAppStore(
-                country=DEFAULT_COUNTRY.lower(),
+            reviews = get_appstore_reviews(
+                app_id=selected_app['id'],
                 app_name=selected_app['title'],
-                app_id=str(app_id)
+                country=DEFAULT_COUNTRY,
+                max_reviews=300
             )
-            try:
-                with st.spinner("🔄 Получаем отзывы..."):
-                    app_store_app.review(
-                        how_many=500,
-                        sleep=random.uniform(3.0, 6.0),
-                        after=datetime.datetime.now() - datetime.timedelta(days=180)
-                    )
-            except Exception as e:
-                st.error(f"Ошибка парсинга: {str(e)}")
-                return []
 
-            # Фильтрация результатов
-            reviews = app_store_app.reviews
+            # Фильтрация по дате
             if start_date and end_date:
-                reviews = [r for r in reviews 
-                         if start_date <= r['date'].date() <= end_date]
-            
+                reviews = [
+                    r for r in reviews
+                    if start_date <= r['date'].date() <= end_date
+                ]
+
             return [(r['date'], r['review'], 'App Store', r['rating']) 
-                  for r in reviews]                 
+                  for r in reviews]           
                     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
