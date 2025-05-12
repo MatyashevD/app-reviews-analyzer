@@ -9,7 +9,7 @@ python-Levenshtein>=0.21.1
 openai>=1.0.0
 python-dotenv>=1.0.0
 transformers
-torch
+torch==2.2.1 --extra-index-url https://download.pytorch.org/whl/cu121
 textblob
 rapidfuzz
 requests>=2.31.0
