@@ -271,7 +271,7 @@ def main():
                         country=country.lower(),
                         app_name=app_name,
                         app_id=str(app_id)
-                    
+                    )
                     app.review(
                         how_many=max_reviews,
                         sleep=random.uniform(2, 4))
