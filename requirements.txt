@@ -1,4 +1,3 @@
-app-store-scraper
 streamlit>=1.27.0
 google-play-scraper==1.2.7
 spacy
@@ -12,6 +11,6 @@ transformers
 torch
 textblob
 rapidfuzz
-requests
+requests>=2.31.0
 pillow>=7.1.0,<10  # Используйте более новую версию Pillow
 ru-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/ru_core_news_sm-3.7.0/ru_core_news_sm-3.7.0.tar.gz
