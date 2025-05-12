@@ -267,78 +267,95 @@ def main():
                     return []
 
             def get_appstore_reviews(app_id: str, app_name: str, country: str = 'ru', max_reviews: int = 200):
-                last_response = None
                 last_url = None
+                session = requests.Session()
                 
                 try:
+                    # Конфигурация как в реальном браузере Safari
                     headers = {
                         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
-                        'Accept': 'application/json',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'ru-RU,ru;q=0.9',
                         'X-Apple-Store-Front': '143469-6,32 raw',
-                        'Accept-Language': 'ru-RU,ru;q=0.9'
+                        'Referer': 'https://www.apple.com/',
                     }
 
-                    session = requests.Session()
-                    session.headers = headers
-
+                    # Патчинг метода запроса
                     original_get = AppStore._get
                     
                     def patched_get(self, url):
-                        nonlocal last_response, last_url
+                        nonlocal last_url
                         last_url = url
+                        
                         try:
-                            response = session.get(url, timeout=15)
+                            response = session.get(
+                                url,
+                                headers=headers,
+                                timeout=15,
+                                allow_redirects=True
+                            )
                             response.raise_for_status()
-                            last_response = response.text
-                            return response.json()
+                            
+                            # Проверка валидности JSON
+                            try:
+                                return response.json()
+                            except json.JSONDecodeError:
+                                st.error(f"Невалидный JSON. Ответ сервера:\n{response.text[:500]}")
+                                return {}
+                                
                         except Exception as e:
-                            st.error(f"URL: {url}")
-                            st.error(f"Status Code: {response.status_code if response else 'No response'}")
-                            raise
+                            st.error(f"Ошибка запроса:\nURL: {url}\nСтатус: {response.status_code}\nОтвет: {response.text[:200]}")
+                            return {}
 
                     AppStore._get = patched_get
 
+                    # Инициализация с обработкой региональных настроек
                     app = AppStore(
                         country=country.lower(),
                         app_name=app_name,
-                        app_id=str(app_id)
+                        app_id=str(app_id),
+                        page_size=50  # Уменьшенный размер страницы
                     )
 
+                    # Постепенная загрузка отзывов
                     reviews = []
-                    for chunk in [50, 50, 50]:  # 3 запроса по 50 отзывов
+                    for attempt in range(3):
                         try:
-                            app.review(how_many=chunk, sleep=random.uniform(5, 10))
+                            app.review(
+                                how_many=50,
+                                sleep=random.uniform(8, 12)  # Большие задержки
+                            )
                             reviews.extend(app.reviews)
                         except Exception as e:
                             continue
-                    
+                            
                     return reviews[:max_reviews]
 
-                except json.JSONDecodeError:
-                    st.error("Сырой ответ сервера:")
-                    st.code(last_response[:500] if last_response else "Пустой ответ", language='json')
-                    st.error(f"URL запроса: {last_url}")
-                    return []
-                
                 except Exception as e:
-                    st.error(f"Ошибка: {str(e)}")
+                    st.error(f"Критическая ошибка: {str(e)}\nПоследний URL: {last_url}")
                     return []
                 
                 finally:
                     AppStore._get = original_get
 
+            # Тест доступности приложения
+            test_url = f"https://apps.apple.com/ru/app/id{selected_app['id']}"
+            st.write(f"Проверка доступности: [открыть приложение]({test_url})")
+
+            # Получение отзывов
             reviews = get_appstore_reviews(
                 app_id=selected_app['id'],
                 app_name=selected_app['title'],
                 country=DEFAULT_COUNTRY,
-                max_reviews=150
+                max_reviews=100  # Минимальное количество для теста
             )
 
-            # Фильтрация по дате
+            # Фильтрация и возврат результатов
             if start_date and end_date:
                 reviews = [r for r in reviews if start_date <= r['date'].date() <= end_date]
-
+                
             return [(r['date'], r['review'], 'App Store', r['rating']) for r in reviews]
+
                     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
