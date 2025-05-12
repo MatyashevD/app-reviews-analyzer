@@ -268,46 +268,60 @@ def main():
 
             def get_appstore_reviews(app_id: str, app_name: str, country: str = 'ru', max_reviews: int = 200):
                 try:
-                    # Конфигурация HTTP-заголовков
+                    # Конфигурация для обхода блокировок
                     headers = {
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                         'Accept-Language': 'ru-RU,ru;q=0.9',
-                        'X-Apple-Store-Front': '143469-6,32 raw'
+                        'X-Apple-Store-Front': '143469-6,32 raw',
+                        'Referer': 'https://www.apple.com/',
                     }
 
-                    # Создаем кастомную сессию
                     session = requests.Session()
-                    session.headers.update(headers)
-
-                    # Монки-патчинг метода получения данных
+                    session.headers = headers
+                    
+                    # Патчинг с сохранением cookies
                     original_get = AppStore._get
-                    AppStore._get = lambda self, url: session.get(url).json()
+                    AppStore._get = lambda self, url: session.get(url, timeout=15).json()
 
+                    # Имитация реального браузера
                     app = AppStore(
                         country=country.lower(),
                         app_name=app_name,
                         app_id=str(app_id)
                     )
-                    app.review(
-                        how_many=max_reviews,
-                        sleep=random.uniform(3, 5)  # Увеличенная задержка
-                    )
+
+                    # Прогрессивная загрузка
+                    reviews = []
+                    for _ in range(3):  # 3 подзапроса по 50 отзывов
+                        try:
+                            app.review(how_many=50, sleep=random.uniform(5, 8))
+                            reviews.extend(app.reviews)
+                        except:
+                            continue
                     
-                    return app.reviews
+                    return reviews[:max_reviews]
+                
                 except json.JSONDecodeError:
-                    st.error("Сервер вернул невалидный JSON. Возможна блокировка запросов.")
+                    # Логирование ошибки для отладки
+                    st.error("Последний ответ сервера:")
+                    st.code(session.get(
+                        f"https://apps.apple.com/ru/app/id{app_id}"
+                    ).text[:500], language='html')
                     return []
+                
                 except Exception as e:
-                    st.error(f"Ошибка парсинга: {str(e)}")
+                    st.error(f"Ошибка: {str(e)}")
                     return []
+                
                 finally:
-                    AppStore._get = original_get  # Восстановление оригинального метода
+                    AppStore._get = original_get
 
             reviews = get_appstore_reviews(
                 app_id=selected_app['id'],
                 app_name=selected_app['title'],
                 country=DEFAULT_COUNTRY,
-                max_reviews=200  # Уменьшенное количество для теста
+                max_reviews=150
             )
 
             # Фильтрация по дате
