@@ -1,6 +1,6 @@
 streamlit>=1.27.0
 google-play-scraper==1.2.7
-app-store-web-scraper==1.0.0
+app-store-web-scraper
 spacy
 pandas==2.2.3
 matplotlib==3.10.0
