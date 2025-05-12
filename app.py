@@ -41,11 +41,11 @@ def main():
     
     #Извлекает App Store ID из URL
     def extract_app_store_id(url: str) -> str:
-    parts = url.strip().split('/')
-    for part in reversed(parts):
-        if part.isdigit():
-            return part
-    return None
+        parts = url.strip().split('/')
+        for part in reversed(parts):
+            if part.isdigit():
+                return part
+        return None
 
     def search_apps(query: str):
         results = {"google_play": [], "app_store": []}
