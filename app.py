@@ -266,72 +266,58 @@ def main():
                     st.error("Не выбрано приложение из App Store")
                     return []
 
-            def get_appstore_reviews(app_id: str, app_name: str, country: str = 'ru', max_reviews: int = 200):
-                session = requests.Session()
-                
-                # Конфигурация как в реальном Safari
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    'Accept-Language': 'ru-RU,ru;q=0.9',
-                    'X-Apple-Store-Front': '143469-6,32 raw',
-                    'Referer': 'https://www.apple.com/',
-                }
-
-                # Патчинг с сохранением структуры класса
-                original__get = AppStore._get
-                
-                def patched__get(self, url):
-                    try:
-                        response = session.get(url, headers=headers, timeout=15)
-                        response.raise_for_status()
-                        
-                        # Сохраняем ответ для обработки ошибок
-                        self._response = response
-                        return response.json()
-                    except Exception as e:
-                        st.error(f"Ошибка запроса: {str(e)}")
-                        st.error(f"URL: {url}")
-                        return {}
-
-                AppStore._get = patched__get
-
+            def fetch_appstore_reviews():
                 try:
-                    app = AppStore(
-                        country=country.lower(),
-                        app_name=app_name,
-                        app_id=str(app_id)
-                    )
-                    # Прогрессивная загрузка
+                    # Конфигурация как для реального браузера
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
+                        'Accept-Language': 'ru-RU,ru;q=0.9',
+                        'X-Apple-Store-Front': '143469-6,32 raw',
+                        'Referer': 'https://www.apple.com/',
+                    }
+
+                    # Получаем cookies перед основным запросом
+                    session = requests.Session()
+                    session.get('https://apps.apple.com', headers=headers, timeout=10)
+
+                    # Альтернативный метод получения отзывов
                     reviews = []
-                    for chunk in [30, 30, 40]:  # 3 запроса с разным количеством
-                        try:
-                            app.review(how_many=chunk, sleep=random.uniform(5, 10))
-                            reviews.extend(app.reviews)
-                        except Exception as e:
-                            continue
-                    
-                    return reviews[:max_reviews]
+                    page = 0
+                    while len(reviews) < 100:  # Лимит отзывов
+                        page += 1
+                        url = f"https://amp-api.apps.apple.com/v1/catalog/ru/apps/{selected_app['id']}/reviews"
+                        params = {
+                            'l': 'ru',
+                            'offset': (page-1)*20,
+                            'limit': 20,
+                            'platform': 'web',
+                            'additionalPlatforms': 'appletv,ipad,iphone,mac'
+                        }
+                        
+                        response = session.get(url, headers=headers, params=params, timeout=15)
+                        if response.status_code != 200:
+                            break
+                            
+                        data = response.json()
+                        reviews.extend([{
+                            'date': datetime.datetime.fromisoformat(r['attributes']['createdDate']),
+                            'review': r['attributes']['review'],
+                            'rating': r['attributes']['rating']
+                        } for r in data.get('data', [])])
+
+                        if len(data.get('data', [])) < 20:
+                            break
+
+                        time.sleep(random.uniform(2, 4))
+
+                    return reviews
 
                 except Exception as e:
-                    st.error(f"Критическая ошибка: {str(e)}")
+                    st.error(f"Ошибка парсинга: {str(e)}")
                     return []
-                
-                finally:
-                    AppStore._get = original__get
 
-            # Тест доступности приложения
-            st.markdown(f"**Проверьте приложение:** [Открыть в App Store](https://apps.apple.com/ru/app/id{selected_app['id']})")
-
-            # Получение отзывов
-            reviews = get_appstore_reviews(
-                app_id=selected_app['id'],
-                app_name=selected_app['title'],
-                country=DEFAULT_COUNTRY,
-                max_reviews=100
-            )
-
-            # Фильтрация по дате
+            # Получаем и фильтруем отзывы
+            reviews = fetch_appstore_reviews()
             if start_date and end_date:
                 reviews = [r for r in reviews if start_date <= r['date'].date() <= end_date]
 
