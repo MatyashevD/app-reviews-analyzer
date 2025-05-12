@@ -267,47 +267,57 @@ def main():
                     return []
 
             def get_appstore_reviews(app_id: str, app_name: str, country: str = 'ru', max_reviews: int = 200):
+                last_response = None
+                last_url = None
+                
                 try:
-                    # Конфигурация для обхода блокировок
                     headers = {
                         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                        'Accept-Language': 'ru-RU,ru;q=0.9',
+                        'Accept': 'application/json',
                         'X-Apple-Store-Front': '143469-6,32 raw',
-                        'Referer': 'https://www.apple.com/',
+                        'Accept-Language': 'ru-RU,ru;q=0.9'
                     }
 
                     session = requests.Session()
                     session.headers = headers
-                    
-                    # Патчинг с сохранением cookies
-                    original_get = AppStore._get
-                    AppStore._get = lambda self, url: session.get(url, timeout=15).json()
 
-                    # Имитация реального браузера
+                    original_get = AppStore._get
+                    
+                    def patched_get(self, url):
+                        nonlocal last_response, last_url
+                        last_url = url
+                        try:
+                            response = session.get(url, timeout=15)
+                            response.raise_for_status()
+                            last_response = response.text
+                            return response.json()
+                        except Exception as e:
+                            st.error(f"URL: {url}")
+                            st.error(f"Status Code: {response.status_code if response else 'No response'}")
+                            raise
+
+                    AppStore._get = patched_get
+
                     app = AppStore(
                         country=country.lower(),
                         app_name=app_name,
                         app_id=str(app_id)
                     )
 
-                    # Прогрессивная загрузка
                     reviews = []
-                    for _ in range(3):  # 3 подзапроса по 50 отзывов
+                    for chunk in [50, 50, 50]:  # 3 запроса по 50 отзывов
                         try:
-                            app.review(how_many=50, sleep=random.uniform(5, 8))
+                            app.review(how_many=chunk, sleep=random.uniform(5, 10))
                             reviews.extend(app.reviews)
-                        except:
+                        except Exception as e:
                             continue
                     
                     return reviews[:max_reviews]
-                
+
                 except json.JSONDecodeError:
-                    # Логирование ошибки для отладки
-                    st.error("Последний ответ сервера:")
-                    st.code(session.get(
-                        f"https://apps.apple.com/ru/app/id{app_id}"
-                    ).text[:500], language='html')
+                    st.error("Сырой ответ сервера:")
+                    st.code(last_response[:500] if last_response else "Пустой ответ", language='json')
+                    st.error(f"URL запроса: {last_url}")
                     return []
                 
                 except Exception as e:
@@ -326,10 +336,7 @@ def main():
 
             # Фильтрация по дате
             if start_date and end_date:
-                reviews = [
-                    r for r in reviews
-                    if start_date <= r['date'].date() <= end_date
-                ]
+                reviews = [r for r in reviews if start_date <= r['date'].date() <= end_date]
 
             return [(r['date'], r['review'], 'App Store', r['rating']) for r in reviews]
                     
