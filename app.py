@@ -81,7 +81,7 @@ def main():
             processed.sort(key=lambda x: x['match_score'], reverse=True)
             
             results["app_store"] = [{
-                "id": r["trackId"],
+                "id": str(r["trackId"],
                 "title": r["trackName"],
                 "developer": r["artistName"],
                 "score": r.get("averageUserRating", 0),
