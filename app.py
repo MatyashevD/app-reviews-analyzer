@@ -328,7 +328,7 @@ def main():
                         utc_time = review.date.astimezone(datetime.timezone.utc)
                         review_date = utc_time.date()
                      
-                    if start_date <= review_date <= end_date
+                    if start_date <= review_date <= end_date:
                         reviews.append((
                             utc_time.replace(tzinfo=None),
                             review.review,
