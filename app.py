@@ -211,7 +211,9 @@ def main():
                 cols = st.columns(len(platform_data))
                 for idx, app in enumerate(platform_data):
                     with cols[idx]:
-                        is_selected = st.session_state.get(f"selected_{platform_key}_app", {}).get('id') == app['id']
+                        # Исправленная строка:
+                        selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
+                        is_selected = selected_app.get('id') == app['id']
                         
                         st.markdown(f"""
                         <div class="app-card">
@@ -238,21 +240,21 @@ def main():
                             use_container_width=True
                         ):
                             if platform_key == "gp":
-                                st.session_state.selected_gp_app = app if not is_selected else None
-                                if app and app.get('release_date'):
-                                    st.session_state.gp_release_dates = st.session_state.get('gp_release_dates', [])
-                                    st.session_state.gp_release_dates.append({
-                                        'date': app['release_date'].isoformat(),
+                                new_selection = app if not is_selected else None
+                                st.session_state.selected_gp_app = new_selection
+                                if new_selection and new_selection.get('release_date'):
+                                    st.session_state.gp_release_dates = [{
+                                        'date': new_selection['release_date'].isoformat(),
                                         'platform': 'Google Play'
-                                    })
+                                    }]
                             elif platform_key == "ios":
-                                st.session_state.selected_ios_app = app if not is_selected else None
-                                if app and app.get('release_date'):
-                                    st.session_state.ios_release_dates = st.session_state.get('ios_release_dates', [])
-                                    st.session_state.ios_release_dates.append({
-                                        'date': app['release_date'].isoformat(),
+                                new_selection = app if not is_selected else None
+                                st.session_state.selected_ios_app = new_selection
+                                if new_selection and new_selection.get('release_date'):
+                                    st.session_state.ios_release_dates = [{
+                                        'date': new_selection['release_date'].isoformat(),
                                         'platform': 'App Store'
-                                    })
+                                    }]
                             st.rerun()
 
         render_platform(" App Store", results["app_store"], "ios", "#399eff", "#cce2ff")
