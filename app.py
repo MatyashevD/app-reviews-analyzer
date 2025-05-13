@@ -307,8 +307,7 @@ def main():
                 # Оптимизированный запрос для App Store
                 session = AppStoreSession(
                     delay=0.5,
-                    retries=3,
-                    timeout=10
+                    retries=3
                 )
     
                 app_entry = AppStoreEntry(
