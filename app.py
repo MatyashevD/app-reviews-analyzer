@@ -95,7 +95,7 @@ def main():
                 try:
                     release_date = (
                         datetime.datetime.strptime(
-                            r['currentVersionReleaseDate'].replace('Z', '+0000'), 
+                            r['currentVersionReleaseDate'].replace('Z', '+00:00'), 
                             '%Y-%m-%dT%H:%M:%S%z'
                         ).date()
                     ) if r.get('currentVersionReleaseDate') else None
@@ -501,7 +501,7 @@ def main():
                         date = item['date']
                         if start_date <= date <= end_date:
                             ax.scatter(
-                                date,
+                                mdates.date2num(date),
                                 max_y * 1.1,
                                 color=platform_color,
                                 marker='*',
