@@ -244,7 +244,7 @@ def main():
                                 st.session_state.selected_gp_app = new_selection
                                 if new_selection and new_selection.get('release_date'):
                                     st.session_state.gp_release_dates = [{
-                                        'date': new_selection['release_date'].isoformat(),
+                                        'date': new_selection['release_date'],
                                         'platform': 'Google Play'
                                     }]
                             elif platform_key == "ios":
@@ -252,7 +252,7 @@ def main():
                                 st.session_state.selected_ios_app = new_selection
                                 if new_selection and new_selection.get('release_date'):
                                     st.session_state.ios_release_dates = [{
-                                        'date': new_selection['release_date'].isoformat(),
+                                        'date': new_selection['release_date'],
                                         'platform': 'App Store'
                                     }]
                             st.rerun()
@@ -411,7 +411,7 @@ def main():
         
         return analysis
 
-    def display_analysis(analysis: dict, filtered_reviews: list):
+    def display_analysis(analysis: dict, filtered_reviews: list, start_date: datetime.date, end_date: datetime.date):
         st.header("📊 Результаты анализа", divider="rainbow")
         
         tab1, tab2, tab3 = st.tabs(["Аналитика", "Все отзывы", "Графики"])
@@ -498,16 +498,17 @@ def main():
                 max_y = daily_ratings.sum(axis=1).max()
                 for item in release_dates:
                     try:
-                        date = datetime.datetime.fromisoformat(item['date']).date() if isinstance(item['date'], str) else item['date']
-                        ax.scatter(
-                            date,
-                            max_y * 1.1,
-                            color=platform_color,
-                            marker='*',
-                            s=200,
-                            zorder=3,
-                            label='Дата релиза'
-                        )
+                        date = item['date']
+                        if start_date <= date <= end_date:
+                            ax.scatter(
+                                date,
+                                max_y * 1.1,
+                                color=platform_color,
+                                marker='*',
+                                s=200,
+                                zorder=3,
+                                label='Дата релиза'
+                            )
                     except Exception as e:
                         st.error(f"Ошибка в дате релиза: {str(e)}")
             
@@ -599,7 +600,12 @@ def main():
                             st.error(f"Ошибка анализа: {str(e)}")
 
     if 'analysis_data' in st.session_state:
-        display_analysis(st.session_state.analysis_data, st.session_state.filtered_reviews)
+        display_analysis(
+            st.session_state.analysis_data, 
+            st.session_state.filtered_reviews,
+            start_date,  # Передаем start_date
+            end_date     # Передаем end_date
+        )
 
 if __name__ == "__main__":
     main()
