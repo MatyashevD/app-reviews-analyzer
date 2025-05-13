@@ -263,83 +263,75 @@ def main():
         if not results["app_store"] and not results["google_play"]:
             st.warning("😞 Приложения не найдены")
 
-    def get_reviews(app_id: str, platform: str, start_date: datetime.date = None, end_date: datetime.date = None):
+    def get_reviews(app_id: str, platform: str, start_date: datetime.date, end_date: datetime.date):
         try:
             if platform == 'google_play':
+                # Запрашиваем отзывы порциями по 100 штук
+                batch_size = 100
                 all_reviews = []
                 continuation_token = None
-                
-                while len(all_reviews) < GOOGLE_PLAY_MAX_REVIEWS:
+                date_filter_enabled = False
+    
+                while True:
                     result, continuation_token = gp_reviews(
                         app_id,
                         lang=DEFAULT_LANG,
                         country=DEFAULT_COUNTRY,
-                        count=200,
+                        count=batch_size,
                         sort=Sort.NEWEST,
                         continuation_token=continuation_token
                     )
-                    
-                    filtered = [
-                        (
-                            r['at'].replace(tzinfo=None),
-                            r['content'],
-                            'Google Play',
-                            r['score']
-                        )
-                        for r in result
-                        if start_date <= r['at'].date() <= end_date
-                    ]
-                    all_reviews.extend(filtered)
-                    
-                    if not continuation_token or len(all_reviews) >= GOOGLE_PLAY_MAX_REVIEWS:
+    
+                    # Фильтрация на лету с прерыванием при выходе за диапазон
+                    for r in result:
+                        review_date = r['at'].date()
+                        if review_date < start_date:
+                            date_filter_enabled = True
+                            break
+                        if start_date <= review_date <= end_date:
+                            all_reviews.append((
+                                r['at'].replace(tzinfo=None),
+                                r['content'],
+                                'Google Play',
+                                r['score']
+                            ))
+    
+                    if date_filter_enabled or not continuation_token or len(all_reviews) >= 1000:
                         break
-                    
-                    time.sleep(random.uniform(1, 3))
-                
-                return all_reviews[:GOOGLE_PLAY_MAX_REVIEWS]
-            
+    
+                    time.sleep(1)  # Защита от блокировки
+    
+                return all_reviews
+    
             elif platform == 'app_store':
-                selected_app = st.session_state.selected_ios_app
-                if not selected_app or not selected_app.get('app_store_id'):
-                    st.error("Не выбрано приложение из App Store")
-                    return []
-
+                # Оптимизированный запрос для App Store
                 session = AppStoreSession(
-                    delay=random.uniform(0.2, 0.5),
-                    retries=10,
-                    retries_backoff_factor=0.3,
-                    retries_backoff_max=15
+                    delay=0.5,
+                    retries=3,
+                    timeout=10
                 )
-
-                try:
-                    app_entry = AppStoreEntry(
-                        app_id=selected_app['app_store_id'],
-                        country=DEFAULT_COUNTRY.lower(),
-                        session=session
-                    )
-                except Exception as e:
-                    st.error(f"Ошибка App Store: {str(e)}")
-                    return []
-
+    
+                app_entry = AppStoreEntry(
+                    app_id=selected_app['app_store_id'],
+                    country=DEFAULT_COUNTRY.lower(),
+                    session=session
+                )
+    
+                # Собираем только свежие отзывы
                 reviews = []
-                try:
-                    for review in app_entry.reviews(limit=APP_STORE_MAX_REVIEWS):
-                        try:
-                            review_date = review.date.date()
-                            if start_date <= review_date <= end_date:
-                                reviews.append((
-                                    review.date.replace(tzinfo=None),
-                                    review.review,
-                                    'App Store',
-                                    review.rating
-                                ))
-                        except Exception as e:
-                            continue
-                    return reviews
-                except Exception as e:
-                    st.error(f"Ошибка парсинга отзывов: {str(e)}")
-                    return []
-        
+                for review in app_entry.reviews(limit=200):
+                    review_date = review.date.date()
+                    if review_date < start_date:
+                        break
+                    if review_date <= end_date:
+                        reviews.append((
+                            review.date.replace(tzinfo=None),
+                            review.review,
+                            'App Store',
+                            review.rating
+                        ))
+                return reviews
+    
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
             return []
