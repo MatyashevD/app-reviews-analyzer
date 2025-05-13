@@ -324,11 +324,13 @@ def main():
                 # Собираем только свежие отзывы
                 reviews = []
                 for review in app_entry.reviews(limit=500):
-                    review_date = review.date.date()
-                    
+                    try:
+                        utc_time = review.date.astimezone(datetime.timezone.utc)
+                        review_date = utc_time.date()
+                     
                     if start_date <= review_date <= end_date
                         reviews.append((
-                            review.date.replace(tzinfo=None),
+                            utc_time.replace(tzinfo=None),
                             review.review,
                             'App Store',
                             review.rating
