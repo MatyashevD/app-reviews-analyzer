@@ -323,11 +323,10 @@ def main():
     
                 # Собираем только свежие отзывы
                 reviews = []
-                for review in app_entry.reviews(limit=200):
+                for review in app_entry.reviews(limit=500):
                     review_date = review.date.date()
-                    if review_date < start_date:
-                        break
-                    if review_date <= end_date:
+                    
+                    if start_date <= review_date <= end_date
                         reviews.append((
                             review.date.replace(tzinfo=None),
                             review.review,
