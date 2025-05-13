@@ -335,6 +335,8 @@ def main():
                             'App Store',
                             review.rating
                         ))
+                    except Exception as e:
+                        continue
                 return reviews
     
         except Exception as e:
