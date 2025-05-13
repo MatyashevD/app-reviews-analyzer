@@ -305,6 +305,11 @@ def main():
     
             elif platform == 'app_store':
                 # Оптимизированный запрос для App Store
+                selected_app = st.session_state.get('selected_ios_app')
+                if not selected_app or not selected_app.get('app_store_id'):
+                    st.error("Не выбрано приложение из App Store")
+                    return []                
+
                 session = AppStoreSession(
                     delay=0.5,
                     retries=3
