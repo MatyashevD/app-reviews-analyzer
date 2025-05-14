@@ -133,7 +133,7 @@ def main():
                         "match_score":  fuzz.token_set_ratio(normalized_query, r["title"].lower()),
                         "icon":         r.get("icon")
                     })
-        
+            st.write("GP apps with release_date:", apps)
             results["google_play"] = apps
         
         except Exception as e:
