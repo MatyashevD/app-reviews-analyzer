@@ -60,7 +60,7 @@ def main():
         
         # Поиск в Google Play
         try:
-            gp_results = search(normalized_query, n=20, lang="ru", country="ru")
+            gp_results = search(normalized_query, lang="ru", country="ru", count=20, throttle=0.1)
             
             apps = []
             for r in gp_results:
