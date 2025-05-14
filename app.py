@@ -96,11 +96,11 @@ def main():
                                     month=months[month_str.lower()],
                                     day=int(day_str)
                                 )
-                      except:
-                          # Формат ISO для даты обновления
-                          rel_date = datetime.datetime.fromisoformat(
-                              info["updated"].replace("Z", "+00:00")
-                          ).date()                                        
+                            except:
+                                # Формат ISO для даты обновления
+                                rel_date = datetime.datetime.fromisoformat(
+                                    info["updated"].replace("Z", "+00:00")
+                                ).date()                                        
         
                 # 3) Формируем запись, если score > 0
                 score = r.get("score", 0) or 0
