@@ -11,6 +11,7 @@ import matplotlib.dates as mdates
 from app_store_web_scraper import AppStoreEntry, AppStoreSession
 from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
+from google_play_scraper import app as gp_app
 from collections import Counter
 from rapidfuzz import fuzz
 from itertools import groupby
@@ -75,50 +76,31 @@ def main():
                 # 3) Если не удалось — запрашиваем подробности и разбираем несколько форматов
                 if rel_date is None:
                     try:
-                        info = gp_app_details(r["appId"], lang="ru", country="ru")
-                        rel_full = info.get("released") or info.get("updated")
+                        info = info = gp_app(r["appId"],lang="ru",country="ru")
+                        rel_full = info.get("released")
         
-                        if isinstance(rel_full, datetime.date):
-                            # если уже date или datetime
-                            rel_date = (
-                                rel_full.date()
-                                if isinstance(rel_full, datetime.datetime)
-                                else rel_full
-                            )
-        
+                        if isinstance(rel_full, datetime.datetime):
+                            rel_date = rel_full.date()
                         elif isinstance(rel_full, str):
                             # 3a) ISO-формат '2013-11-10T18:31:42.174Z'
                             try:
-                                rel_date = datetime.datetime.fromisoformat(
-                                    rel_full.replace("Z", "+00:00")
-                                ).date()
-                            except ValueError:
-                                # 3b) Английский 'October 1, 2022'
-                                try:
-                                    rel_date = datetime.datetime.strptime(
-                                        rel_full, "%B %d, %Y"
-                                    ).date()
-                                except ValueError:
-                                    # 3c) Русский '15 апр. 2025 г.'
-                                    try:
-                                        txt = rel_full.replace(" ", " ").replace(" г.", "").strip()
-                                        day_str, mon_str, year_str = txt.split()
-                                        mon_str = mon_str.replace(".", "").lower()
-                                        day, year = int(day_str), int(year_str)
-                                        months = {
-                                            "янв": 1, "фев": 2, "мар": 3, "апр": 4,
-                                            "май": 5, "июн": 6, "июл": 7, "авг": 8,
-                                            "сен": 9, "окт": 10, "ноя": 11, "дек": 12
-                                        }
-                                        month = months.get(mon_str)
-                                        rel_date = datetime.date(year, month, day)
-                                    except Exception:
-                                        rel_date = None
-                        # иначе оставляем None
-                    
-                    except Exception as e:
-                        # при ошибке парсинга/запроса оставляем None
-                        rel_date = None
+                                # Формат "15 апреля 2023 г."
+                                day_str, month_str, year_str = rel_full.replace(" г.", "").split()
+                                months = {
+                                    "января": 1, "февраля": 2, "марта": 3, "апреля": 4,
+                                    "мая": 5, "июня": 6, "июля": 7, "августа": 8,
+                                    "сентября": 9, "октября": 10, "ноября": 11, "декабря": 12
+                                }
+                                rel_date = datetime.date(
+                                    year=int(year_str),
+                                    month=months[month_str.lower()],
+                                    day=int(day_str)
+                                )
+                             except:
+                                 # Формат ISO для даты обновления
+                                 rel_date = datetime.datetime.fromisoformat(
+                                     info["updated"].replace("Z", "+00:00")
+                                 ).date()                      
         
                 # 3) Формируем запись, если score > 0
                 score = r.get("score", 0) or 0
@@ -137,7 +119,8 @@ def main():
             results["google_play"] = apps
         
         except Exception as e:
-            st.error(f"Ошибка поиска в Google Play: {e}")
+            st.error(f"Ошибка получения деталей приложения {r['appId']}: {str(e)}")
+            rel_date = None
         
         # Поиск в App Store
         try:
