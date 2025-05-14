@@ -63,7 +63,7 @@ def main():
             
             apps = []
             for r in gp_results:
-                # 1) Попытка получить короткую дату из r['released']
+                # 2) Сначала пытаемся получить короткий формат 'released', например 'Oct  1, 2022'
                 rel_date = None
                 short_rel = r.get("released")
                 if short_rel:
@@ -72,14 +72,10 @@ def main():
                     except Exception:
                         rel_date = None
         
-                # 2) Если не получилось — запрашиваем подробности
+                # 3) Если не удалось — запрашиваем подробности и разбираем несколько форматов
                 if rel_date is None:
                     try:
-                        info = gp_app_details(
-                            r["appId"],
-                            lang="ru",
-                            country="ru"
-                        )
+                        info = gp_app_details(r["appId"], lang="ru", country="ru")
                         rel_full = info.get("released") or info.get("updated")
         
                         if isinstance(rel_full, datetime.date):
@@ -91,18 +87,35 @@ def main():
                             )
         
                         elif isinstance(rel_full, str):
-                            # 2a) Попытка ISO-формата с Z
+                            # 3a) ISO-формат '2013-11-10T18:31:42.174Z'
                             try:
                                 rel_date = datetime.datetime.fromisoformat(
                                     rel_full.replace("Z", "+00:00")
                                 ).date()
                             except ValueError:
-                                # 2b) Фоллбэк на формат 'October 1, 2022'
-                                rel_date = datetime.datetime.strptime(
-                                    rel_full, "%B %d, %Y"
-                                ).date()
-                        # иначе оставляем rel_date = None
-        
+                                # 3b) Английский 'October 1, 2022'
+                                try:
+                                    rel_date = datetime.datetime.strptime(
+                                        rel_full, "%B %d, %Y"
+                                    ).date()
+                                except ValueError:
+                                    # 3c) Русский '15 апр. 2025 г.'
+                                    try:
+                                        txt = rel_full.replace(" ", " ").replace(" г.", "").strip()
+                                        day_str, mon_str, year_str = txt.split()
+                                        mon_str = mon_str.replace(".", "").lower()
+                                        day, year = int(day_str), int(year_str)
+                                        months = {
+                                            "янв": 1, "фев": 2, "мар": 3, "апр": 4,
+                                            "май": 5, "июн": 6, "июл": 7, "авг": 8,
+                                            "сен": 9, "окт": 10, "ноя": 11, "дек": 12
+                                        }
+                                        month = months.get(mon_str)
+                                        rel_date = datetime.date(year, month, day)
+                                    except Exception:
+                                        rel_date = None
+                        # иначе оставляем None
+                    
                     except Exception as e:
                         # при ошибке парсинга/запроса оставляем None
                         rel_date = None
