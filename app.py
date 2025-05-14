@@ -507,7 +507,7 @@ def main():
                         date = item['date']
 
                         if isinstance(date, str):
-                        date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+                            date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
 
                         st.write(f"Дата релиза {item['platform']}: {date} (тип: {type(date)})")
                         
