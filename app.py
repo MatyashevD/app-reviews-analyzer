@@ -70,6 +70,41 @@ def main():
                 "match_score": fuzz.token_set_ratio(normalized_query, r['title'].lower()),
                 "icon": r["icon"]
             } for r in gp_results if r.get("score", 0) > 0]
+            
+            from google_play_scraper import app as gp_app_details
+
+            apps = []
+            for r in gp_results:
+                # первичный релиз из результата поиска
+                rel = r.get('released')
+                rel_date = None
+                if rel:
+                    try:
+                        # формат типа 'Oct  1, 2022'
+                        rel_date = datetime.datetime.strptime(rel, "%b %d, %Y").date()
+                    except ValueError:
+                        rel_date = None
+                if rel_date is None:
+                        # дергаем детали: там обычно есть более полное поле updated
+                    try:
+                        info = gp_app_details(r["appId"], lang="ru", country="ru")
+                        rel_full = info.get("released") or info.get("updated")
+                        # там часто формат 'October 1, 2022'
+                        rel_date = datetime.datetime.strptime(rel_full, "%B %d, %Y").date()
+                    except Exception:
+                        rel_date = None
+                apps.append({
+                    "id":          r["appId"],
+                    "title":       r["title"],
+                    "developer":   r["developer"],
+                    "score":       r.get("score", 0),
+                    "release_date": rel_date,
+                    "platform":    "Google Play",
+                    "match_score": fuzz.token_set_ratio(normalized_query, r["title"].lower()),
+                    "icon":        r.get("icon")
+                })
+            # фильтруем нулевые скоры
+            results["google_play"] = [a for a in apps if a["score"] > 0]
                     
         except Exception as e:
             st.error(f"Ошибка поиска в Google Play: {str(e)}")
