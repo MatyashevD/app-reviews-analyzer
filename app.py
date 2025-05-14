@@ -63,17 +63,16 @@ def main():
             
             apps = []
             for r in gp_results:
-                # 2. Сначала пробуем короткий формат 'released' из поиска
-                rel = r.get("released")
+                # 1) Попытка получить короткую дату из r['released']
                 rel_date = None
-                if rel:
+                short_rel = r.get("released")
+                if short_rel:
                     try:
-                        # например 'Oct  1, 2022'
-                        rel_date = datetime.datetime.strptime(rel, "%b %d, %Y").date()
-                    except ValueError:
+                        rel_date = datetime.datetime.strptime(short_rel, "%b %d, %Y").date()
+                    except Exception:
                         rel_date = None
         
-                # 3. Если не получилось — дергаем подробности
+                # 2) Если не получилось — запрашиваем подробности
                 if rel_date is None:
                     try:
                         info = gp_app_details(
@@ -82,13 +81,34 @@ def main():
                             country="ru"
                         )
                         rel_full = info.get("released") or info.get("updated")
-                        # например 'October 1, 2022'
-                        rel_date = datetime.datetime.strptime(rel_full, "%B %d, %Y").date()
-                    except Exception:
+        
+                        if isinstance(rel_full, datetime.date):
+                            # если уже date или datetime
+                            rel_date = (
+                                rel_full.date()
+                                if isinstance(rel_full, datetime.datetime)
+                                else rel_full
+                            )
+        
+                        elif isinstance(rel_full, str):
+                            # 2a) Попытка ISO-формата с Z
+                            try:
+                                rel_date = datetime.datetime.fromisoformat(
+                                    rel_full.replace("Z", "+00:00")
+                                ).date()
+                            except ValueError:
+                                # 2b) Фоллбэк на формат 'October 1, 2022'
+                                rel_date = datetime.datetime.strptime(
+                                    rel_full, "%B %d, %Y"
+                                ).date()
+                        # иначе оставляем rel_date = None
+        
+                    except Exception as e:
+                        # при ошибке парсинга/запроса оставляем None
                         rel_date = None
         
-                # 4. Формируем готовый словарь
-                score = r.get("score", 0)
+                # 3) Формируем запись, если score > 0
+                score = r.get("score", 0) or 0
                 if score > 0:
                     apps.append({
                         "id":           r["appId"],
