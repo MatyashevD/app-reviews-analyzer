@@ -60,67 +60,73 @@ def main():
         
         # Поиск в Google Play
         try:
-            gp_results = search(normalized_query, lang="ru", country="ru", count=20, throttle=0.1)
+            gp_results = search(normalized_query, lang="ru", country="ru", n_hits=20)
             
             apps = []
             for r in gp_results:
-                # 2) Сначала пытаемся получить короткий формат 'released', например 'Oct  1, 2022'
-                rel_date = None
-                short_rel = r.get("released")
-                if short_rel:
-                    try:
-                        rel_date = datetime.datetime.strptime(short_rel, "%b %d, %Y").date()
-                    except Exception:
-                        rel_date = None
+                try:
+                    # 2) Сначала пытаемся получить короткий формат 'released'
+                    rel_date = None
+                    short_rel = r.get("released")
+                    if short_rel:
+                        try:
+                            rel_date = datetime.datetime.strptime(short_rel, "%b %d, %Y").date()
+                        except Exception:
+                            rel_date = None
         
-                # 3) Если не удалось — запрашиваем подробности и разбираем несколько форматов
-                if rel_date is None:
-                    try:
-                        info = gp_app(r["appId"],lang="ru",country="ru")
-                        rel_full = info.get("released")
+                    # 3) Если не удалось — запрашиваем подробности
+                    if rel_date is None:
+                        try:
+                            info = gp_app(r["appId"], lang="ru", country="ru")
+                            rel_full = info.get("released")
         
-                        if isinstance(rel_full, datetime.datetime):
-                            rel_date = rel_full.date()
-                        elif isinstance(rel_full, str):
-                            # 3a) ISO-формат '2013-11-10T18:31:42.174Z'
-                            try:
-                                # Формат "15 апреля 2023 г."
-                                day_str, month_str, year_str = rel_full.replace(" г.", "").split()
-                                months = {
-                                    "января": 1, "февраля": 2, "марта": 3, "апреля": 4,
-                                    "мая": 5, "июня": 6, "июля": 7, "августа": 8,
-                                    "сентября": 9, "октября": 10, "ноября": 11, "декабря": 12
-                                }
-                                rel_date = datetime.date(
-                                    year=int(year_str),
-                                    month=months[month_str.lower()],
-                                    day=int(day_str)
-                                )
-                            except:
-                                # Формат ISO для даты обновления
-                                rel_date = datetime.datetime.fromisoformat(
-                                    info["updated"].replace("Z", "+00:00")
-                                ).date()                                        
+                            if isinstance(rel_full, datetime.datetime):
+                                rel_date = rel_full.date()
+                            elif isinstance(rel_full, str):
+                                try:
+                                    # Формат "15 апреля 2023 г."
+                                    day_str, month_str, year_str = rel_full.replace(" г.", "").split()
+                                    months = {
+                                        "января": 1, "февраля": 2, "марта": 3, "апреля": 4,
+                                        "мая": 5, "июня": 6, "июля": 7, "августа": 8,
+                                        "сентября": 9, "октября": 10, "ноября": 11, "декабря": 12
+                                    }
+                                    rel_date = datetime.date(
+                                        year=int(year_str),
+                                        month=months[month_str.lower()],
+                                        day=int(day_str)
+                                    )
+                                except:
+                                    # Формат ISO для даты обновления
+                                    rel_date = datetime.datetime.fromisoformat(
+                                        info["updated"].replace("Z", "+00:00")
+                                    ).date()
+                        except Exception as e:
+                            st.error(f"Ошибка получения деталей приложения {r['appId']}: {str(e)}")
+                            rel_date = None
         
-                # 3) Формируем запись, если score > 0
-                score = r.get("score", 0) or 0
-                if score > 0:
-                    apps.append({
-                        "id":           r["appId"],
-                        "title":        r["title"],
-                        "developer":    r.get("developer"),
-                        "score":        score,
-                        "release_date": rel_date,
-                        "platform":     "Google Play",
-                        "match_score":  fuzz.token_set_ratio(normalized_query, r["title"].lower()),
-                        "icon":         r.get("icon")
-                    })
-            st.write("GP apps with release_date:", apps)
+                    # Формируем запись
+                    score = r.get("score", 0) or 0
+                    if score > 0:
+                        apps.append({
+                            "id": r["appId"],
+                            "title": r["title"],
+                            "developer": r.get("developer"),
+                            "score": score,
+                            "release_date": rel_date,
+                            "platform": "Google Play",
+                            "match_score": fuzz.token_set_ratio(normalized_query, r["title"].lower()),
+                            "icon": r.get("icon")
+                        })
+                except Exception as e:
+                    st.error(f"Ошибка обработки приложения: {str(e)}")
+                    continue
+        
             results["google_play"] = apps
         
         except Exception as e:
-            st.error(f"Ошибка получения деталей приложения {r['appId']}: {str(e)}")
-            rel_date = None
+            st.error(f"Ошибка поиска в Google Play: {str(e)}")
+            st.exception(e)
         
         # Поиск в App Store
         try:
