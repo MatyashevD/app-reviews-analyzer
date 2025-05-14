@@ -79,8 +79,12 @@ def main():
                         try:
                             info = gp_app(r["appId"], lang="ru", country="ru")
                             rel_full = info.get("released")
-        
-                            if isinstance(rel_full, datetime.datetime):
+                            
+                            # Обрабатываем разные форматы данных
+                            if isinstance(rel_full, (int, float)):
+                                # Конвертируем timestamp в дату
+                                rel_date = datetime.datetime.fromtimestamp(rel_full/1000).date()
+                            elif isinstance(rel_full, datetime.datetime):
                                 rel_date = rel_full.date()
                             elif isinstance(rel_full, str):
                                 try:
@@ -98,9 +102,13 @@ def main():
                                     )
                                 except:
                                     # Формат ISO для даты обновления
-                                    rel_date = datetime.datetime.fromisoformat(
-                                        info["updated"].replace("Z", "+00:00")
-                                    ).date()
+                                    updated = info.get("updated")
+                                    if isinstance(updated, (int, float)):
+                                        rel_date = datetime.datetime.fromtimestamp(updated/1000).date()
+                                    elif isinstance(updated, str):
+                                        rel_date = datetime.datetime.fromisoformat(
+                                            updated.replace("Z", "+00:00")
+                                        ).date()
                         except Exception as e:
                             st.error(f"Ошибка получения деталей приложения {r['appId']}: {str(e)}")
                             rel_date = None
