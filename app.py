@@ -541,7 +541,9 @@ def main():
             if not platform_filtered:
                 st.warning(f"Нет отзывов для {selected_platform}")
                 return
-            
+
+            st.write("GP apps with release_date:", apps)            
+
             df = pd.DataFrame(platform_filtered, columns=['date', 'rating'])
             daily_ratings = df.groupby('date')['rating'].value_counts().unstack().fillna(0)
             
