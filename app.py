@@ -59,55 +59,52 @@ def main():
         
         # Поиск в Google Play
         try:
-            gp_results = search(normalized_query, n_hits=20, lang="ru", country="ru")
-            results["google_play"] = [{
-                "id": r["appId"], 
-                "title": r["title"], 
-                "developer": r["developer"],
-                "score": r["score"],
-                "release_date": datetime.datetime.strptime(r['released'], "%b %d, %Y").date() if r.get('released') else None,
-                "platform": 'Google Play',
-                "match_score": fuzz.token_set_ratio(normalized_query, r['title'].lower()),
-                "icon": r["icon"]
-            } for r in gp_results if r.get("score", 0) > 0]
+            gp_results = search(normalized_query, n=20, lang="ru", country="ru")
             
-            from google_play_scraper import app as gp_app_details
-
             apps = []
             for r in gp_results:
-                # первичный релиз из результата поиска
-                rel = r.get('released')
+                # 2. Сначала пробуем короткий формат 'released' из поиска
+                rel = r.get("released")
                 rel_date = None
                 if rel:
                     try:
-                        # формат типа 'Oct  1, 2022'
+                        # например 'Oct  1, 2022'
                         rel_date = datetime.datetime.strptime(rel, "%b %d, %Y").date()
                     except ValueError:
                         rel_date = None
+        
+                # 3. Если не получилось — дергаем подробности
                 if rel_date is None:
-                        # дергаем детали: там обычно есть более полное поле updated
                     try:
-                        info = gp_app_details(r["appId"], lang="ru", country="ru")
+                        info = gp_app_details(
+                            r["appId"],
+                            lang="ru",
+                            country="ru"
+                        )
                         rel_full = info.get("released") or info.get("updated")
-                        # там часто формат 'October 1, 2022'
+                        # например 'October 1, 2022'
                         rel_date = datetime.datetime.strptime(rel_full, "%B %d, %Y").date()
                     except Exception:
                         rel_date = None
-                apps.append({
-                    "id":          r["appId"],
-                    "title":       r["title"],
-                    "developer":   r["developer"],
-                    "score":       r.get("score", 0),
-                    "release_date": rel_date,
-                    "platform":    "Google Play",
-                    "match_score": fuzz.token_set_ratio(normalized_query, r["title"].lower()),
-                    "icon":        r.get("icon")
-                })
-            # фильтруем нулевые скоры
-            results["google_play"] = [a for a in apps if a["score"] > 0]
-                    
+        
+                # 4. Формируем готовый словарь
+                score = r.get("score", 0)
+                if score > 0:
+                    apps.append({
+                        "id":           r["appId"],
+                        "title":        r["title"],
+                        "developer":    r.get("developer"),
+                        "score":        score,
+                        "release_date": rel_date,
+                        "platform":     "Google Play",
+                        "match_score":  fuzz.token_set_ratio(normalized_query, r["title"].lower()),
+                        "icon":         r.get("icon")
+                    })
+        
+            results["google_play"] = apps
+        
         except Exception as e:
-            st.error(f"Ошибка поиска в Google Play: {str(e)}")
+            st.error(f"Ошибка поиска в Google Play: {e}")
         
         # Поиск в App Store
         try:
