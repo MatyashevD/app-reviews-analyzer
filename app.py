@@ -247,6 +247,9 @@ def main():
                                         'date': new_selection['release_date'],
                                         'platform': 'Google Play'
                                     }]
+                                else:
+                                    st.session_state.gp_release_dates = []
+                                    
                             elif platform_key == "ios":
                                 new_selection = app if not is_selected else None
                                 st.session_state.selected_ios_app = new_selection
@@ -502,6 +505,12 @@ def main():
                 for item in release_dates:
                     try:
                         date = item['date']
+
+                        if isinstance(date, str):
+                        date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+
+                        st.write(f"Дата релиза {item['platform']}: {date} (тип: {type(date)})")
+                        
                         if start_date <= date <= end_date:
                             ax.scatter(
                                 mdates.date2num(date),
