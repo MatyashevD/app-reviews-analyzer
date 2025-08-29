@@ -36,11 +36,12 @@ def main():
     .app-card {
         border-radius: 12px;
         padding: 16px;
-        margin-bottom: 16px;
+        margin-bottom: 8px;
         background: white;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         max-width: 320px;
         transition: all 0.2s ease;
+        display: block;
     }
     
     .app-card:hover {
@@ -53,6 +54,17 @@ def main():
         height: 48px;
         border-radius: 8px;
         flex-shrink: 0;
+    }
+    
+    /* Контейнер для карточки с кнопкой */
+    .card-container {
+        margin-bottom: 20px;
+        max-width: 320px;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -414,8 +426,10 @@ def main():
                 # Показываем высокое качество первым
                 if high_quality:
                     st.markdown(f"### 🎯 {platform_name} - Лучшие совпадения ({len(high_quality)})")
-                    cols = st.columns(min(len(high_quality), 3))
-                    for idx, app in enumerate(high_quality):
+                    # Показываем до 5 лучших совпадений
+                    max_cards = min(len(high_quality), 5)
+                    cols = st.columns(max_cards)
+                    for idx, app in enumerate(high_quality[:max_cards]):
                         with cols[idx]:
                             render_app_card(app, platform_key, color, bg_color, is_high_quality=True)
                 
@@ -446,43 +460,45 @@ def main():
             rating_display = f"★ {app['score']:.1f}" if app['score'] > 0 else "Нет рейтинга"
             
             st.markdown(f"""
-            <div class="app-card" style="border: {border_style};">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                    <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; font-size: 14px; color: #2e2e2e; margin-bottom: 4px;">
-                            {app['title']}
-                        </div>
-                        <div style="font-size: 12px; color: #a8a8a8; margin-bottom: 6px;">
-                            {app['developer']}
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div style="color: {color}; font-weight: 500;">
-                                {rating_display}
+            <div class="card-container">
+                <div class="app-card" style="border: {border_style}; margin-bottom: 0;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 14px; color: #2e2e2e; margin-bottom: 4px;">
+                                {app['title']}
                             </div>
-                            <div style="
-                                background: {relevance_color}; 
-                                color: white; 
-                                padding: 2px 8px; 
-                                border-radius: 10px; 
-                                font-size: 10px; 
-                                font-weight: 600;
-                            ">
-                                {app['match_score']:.0f}%
+                            <div style="font-size: 12px; color: #a8a8a8; margin-bottom: 6px;">
+                                {app['developer']}
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="color: {color}; font-weight: 500;">
+                                    {rating_display}
+                                </div>
+                                <div style="
+                                    background: {relevance_color}; 
+                                    color: white; 
+                                    padding: 2px 8px; 
+                                    border-radius: 10px; 
+                                    font-size: 10px; 
+                                    font-weight: 600;
+                                ">
+                                    {app['match_score']:.0f}%
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div style="
-                    background: {bg_color}; 
-                    color: {color}; 
-                    padding: 4px 12px; 
-                    border-radius: 20px; 
-                    font-size: 12px;
-                    text-align: center;
-                    font-weight: 500;
-                ">
-                    {platform_key.upper()}
+                    <div style="
+                        background: {bg_color}; 
+                        color: {color}; 
+                        padding: 4px 12px; 
+                        border-radius: 20px; 
+                        font-size: 12px;
+                        text-align: center;
+                        font-weight: 500;
+                    ">
+                        {platform_key.upper()}
+                    </div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
