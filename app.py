@@ -26,11 +26,12 @@ def main():
         menu_items={'About': "### Анализ отзывов из Google Play и App Store"}
     )
 
-    client = OpenAI(api_key=st.secrets.get("openai_api_key"))
-
-    if "openai_api_key" not in st.secrets or not client.api_key:
+    # Проверяем наличие API ключа
+    if "openai_api_key" not in st.secrets or not st.secrets["openai_api_key"]:
         st.error("❌ API-ключ OpenAI не найден. Проверьте настройки секретов.")
         st.stop()
+    
+    client = OpenAI(api_key=st.secrets["openai_api_key"])
 
     try:
         nlp = spacy.load("ru_core_news_sm")
