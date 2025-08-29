@@ -425,15 +425,9 @@ def main():
                             render_app_card(app, platform_key, color, bg_color, is_high_quality=False)
 
         def render_app_card(app, platform_key, color, bg_color, is_high_quality=False):
-            """Отображает карточку приложения используя только Streamlit компоненты"""
+            """Отображает красивую карточку приложения используя Streamlit"""
             selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
             is_selected = selected_app.get('id') == app['id']
-            
-            # Определяем цвет релевантности
-            if is_high_quality:
-                relevance_color = "#4CAF50"  # Зеленый для высокого качества
-            else:
-                relevance_color = "#FF9800"  # Оранжевый для среднего/низкого качества
             
             # Форматируем рейтинг
             rating_display = f"★ {app['score']:.1f}" if app['score'] > 0 else "Нет рейтинга"
@@ -441,37 +435,87 @@ def main():
             # Определяем иконку платформы
             platform_icon = "📱" if platform_key == "ios" else "🎮"
             
-            # Создаем карточку с помощью Streamlit контейнеров
+            # Создаем карточку
             with st.container():
-                # Заголовок карточки
-                if is_selected:
-                    st.markdown(f"### 🎯 {app['title']}")
-                else:
-                    st.markdown(f"### 📱 {app['title']}")
+                # Основная карточка с границей
+                st.markdown("---")
                 
-                # Разработчик
-                st.markdown(f"**Разработчик:** {app['developer']}")
+                # Заголовок и статус в одной строке
+                col_title, col_status = st.columns([4, 1])
                 
-                # Метрики в колонках
-                col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+                with col_title:
+                    if is_selected:
+                        st.markdown(f"### 🎯 {app['title']}")
+                    else:
+                        st.markdown(f"### 📱 {app['title']}")
                 
-                with col1:
-                    st.metric("Рейтинг", rating_display)
-                
-                with col2:
-                    st.metric("Совпадение", f"{app['match_score']:.0f}%")
-                
-                with col3:
-                    st.metric("Платформа", platform_icon)
-                
-                with col4:
+                with col_status:
                     if is_selected:
                         st.success("✓ Выбрано")
                     else:
                         st.info("Не выбрано")
                 
+                # Разработчик
+                st.markdown(f"**👨‍💻 Разработчик:** {app['developer']}")
+                
+                # Метрики в красивых колонках
+                col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+                
+                with col1:
+                    st.markdown(f"""
+                    <div style="
+                        background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
+                        padding: 10px;
+                        border-radius: 8px;
+                        border-left: 4px solid #007acc;
+                        text-align: center;
+                    ">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Рейтинг</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #007acc;">{rating_display}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col2:
+                    # Цвет для процента совпадения
+                    match_color = "#4CAF50" if app['match_score'] >= 80 else "#FF9800" if app['match_score'] >= 50 else "#F44336"
+                    st.markdown(f"""
+                    <div style="
+                        background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
+                        padding: 10px;
+                        border-radius: 8px;
+                        border-left: 4px solid {match_color};
+                        text-align: center;
+                    ">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Совпадение</div>
+                        <div style="font-size: 16px; font-weight: bold; color: {match_color};">{app['match_score']:.0f}%</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col3:
+                    st.markdown(f"""
+                    <div style="
+                        background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
+                        padding: 10px;
+                        border-radius: 8px;
+                        border-left: 4px solid {color};
+                        text-align: center;
+                    ">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Платформа</div>
+                        <div style="font-size: 16px; font-weight: bold; color: {color};">{platform_icon}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col4:
+                    # Иконка приложения
+                    icon_url = app.get('icon', 'https://via.placeholder.com/48')
+                    st.markdown(f"""
+                    <div style="text-align: center;">
+                        <img src="{icon_url}" style="width: 40px; height: 40px; border-radius: 8px;">
+                    </div>
+                    """, unsafe_allow_html=True)
+                
                 # Разделитель
-                st.divider()
+                st.markdown("---")
                 
                 # Кнопка выбора
                 if st.button(
