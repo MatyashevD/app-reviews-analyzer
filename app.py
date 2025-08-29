@@ -30,33 +30,49 @@ def main():
         menu_items={'About': "### Анализ отзывов из Google Play и App Store"}
     )
     
-    # Добавляем JavaScript для кликабельных карточек
+    # CSS стили для карточек
     st.markdown("""
-    <script>
-    function handleCardClick(cardKey) {
-        // Находим скрытую кнопку и кликаем по ней
-        const button = document.querySelector(`button[data-testid*="${cardKey}"]`);
-        if (button) {
-            button.click();
-        }
+    <style>
+    .app-card {
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        max-width: 320px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
     }
     
-    // Добавляем hover эффекты для карточек
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.app-card');
-        cards.forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-2px)';
-                this.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
-            });
-            
-            card.addEventListener('mouseleave', function() {
-                this.style.transform = 'translateY(0)';
-                this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-            });
-        });
-    });
-    </script>
+    .app-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    
+    .app-card.selected {
+        border: 3px solid #4CAF50;
+        background: linear-gradient(135deg, white, #e8f5e8);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    
+    .selection-indicator {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #4CAF50;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    </style>
     """, unsafe_allow_html=True)
 
     # Проверяем наличие API ключа
@@ -450,62 +466,13 @@ def main():
             # Определяем иконку платформы
             platform_icon = "📱" if platform_key == "ios" else "🎮"
             
-            # Создаем уникальный ключ для карточки
-            card_key = f"card_{platform_key}_{app['id']}"
+            # Определяем CSS класс для выбранной карточки
+            card_class = "app-card selected" if is_selected else "app-card"
             
-            # Определяем стили для выбранной/невыбранной карточки
-            if is_selected:
-                card_style = f"""
-                    border: 3px solid {relevance_color}; 
-                    border-radius: 12px; 
-                    padding: 16px; 
-                    margin-bottom: 12px; 
-                    background: linear-gradient(135deg, white, {bg_color}20); 
-                    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-                    max-width: 320px;
-                    transition: all 0.3s ease;
-                    cursor: pointer;
-                    position: relative;
-                """
-                # Добавляем индикатор выбора
-                selection_indicator = """
-                    <div style="
-                        position: absolute; 
-                        top: -8px; 
-                        right: -8px; 
-                        background: #4CAF50; 
-                        color: white; 
-                        border-radius: 50%; 
-                        width: 24px; 
-                        height: 24px; 
-                        display: flex; 
-                        align-items: center; 
-                        justify-content: center; 
-                        font-size: 12px; 
-                        font-weight: bold;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                    ">
-                        ✓
-                    </div>
-                """
-            else:
-                card_style = f"""
-                    border: {border_style}; 
-                    border-radius: 12px; 
-                    padding: 16px; 
-                    margin-bottom: 12px; 
-                    background: white; 
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                    max-width: 320px;
-                    transition: all 0.3s ease;
-                    cursor: pointer;
-                    position: relative;
-                """
-                selection_indicator = ""
-            
+            # Создаем карточку с CSS классами
             st.markdown(f"""
-            <div class="app-card" style="{card_style}" onclick="handleCardClick('{card_key}')">
-                {selection_indicator}
+            <div class="{card_class}">
+                {f'<div class="selection-indicator">✓</div>' if is_selected else ''}
                 <div style="display: flex; align-items: flex-start; gap: 12px;">
                     <img src="{app.get('icon', 'https://via.placeholder.com/48')}" 
                          style="width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;">
@@ -580,14 +547,15 @@ def main():
             </div>
             """, unsafe_allow_html=True)
             
-            # Скрытая кнопка для обработки клика
-            if st.button(
-                "Выбрать" if not is_selected else "Отменить выбор",
-                key=f"hidden_{platform_key}_{app['id']}",
-                use_container_width=True,
-                type="primary" if is_selected else "secondary",
-                help="Нажмите на карточку выше для выбора приложения"
-            ):
+            # Красивая кнопка под карточкой
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button(
+                    "✓ Выбрано" if is_selected else "📌 Выбрать",
+                    key=f"{platform_key}_{app['id']}",
+                    use_container_width=True,
+                    type="primary" if is_selected else "secondary"
+                ):
                     if platform_key == "gp":
                         new_selection = app if not is_selected else None
                         st.session_state.selected_gp_app = new_selection
