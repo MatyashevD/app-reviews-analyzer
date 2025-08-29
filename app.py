@@ -9,7 +9,7 @@ import spacy
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 # Fallback для App Store - используем только iTunes API
-# from app_store_scraper import AppStore  # Отключаем проблемный модуль
+from app_store_web_scraper import AppStoreEntry, AppStoreSession
 from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
 from google_play_scraper import app as gp_app
@@ -520,15 +520,47 @@ def main():
                 return all_reviews
     
             elif platform == 'app_store':
-                # Оптимизированный запрос для App Store
+                # Получение отзывов из App Store
                 selected_app = st.session_state.get('selected_ios_app')
                 if not selected_app or not selected_app.get('app_store_id'):
                     st.error("Не выбрано приложение из App Store")
-                    return []                
-
-                # Временно отключаем получение отзывов из App Store
-                st.warning("⚠️ Получение отзывов из App Store временно недоступно")
-                return []
+                    return []
+                
+                app_store_id = selected_app['app_store_id']
+                
+                try:
+                    # Создаем сессию для App Store
+                    session = AppStoreSession()
+                    app_entry = AppStoreEntry(app_store_id, session)
+                    
+                    # Получаем отзывы
+                    reviews_data = app_entry.get_reviews()
+                    
+                    all_reviews = []
+                    for review in reviews_data:
+                        try:
+                            # Парсим дату отзыва
+                            review_date = datetime.datetime.strptime(
+                                review.get('date', ''), 
+                                '%Y-%m-%d'
+                            ).date()
+                            
+                            # Фильтруем по дате
+                            if start_date <= review_date <= end_date:
+                                all_reviews.append((
+                                    datetime.datetime.combine(review_date, datetime.time.min),
+                                    review.get('text', ''),
+                                    'App Store',
+                                    review.get('rating', 0)
+                                ))
+                        except Exception as e:
+                            continue
+                    
+                    return all_reviews
+                    
+                except Exception as e:
+                    st.error(f"Ошибка получения отзывов из App Store: {str(e)}")
+                    return []
     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
