@@ -257,11 +257,11 @@ def main():
             medium_quality = [app for app in apps if 50 <= app['match_score'] < 80]  # Среднее качество
             low_quality = [app for app in apps if 30 <= app['match_score'] < 50]  # Низкое качество
             
-            # Показываем максимум 3 высокого качества, 1 низкого (если нет высокого)
+            # Показываем максимум 5 высокого качества, 2 низкого (если нет высокого)
             filtered_apps = []
-            filtered_apps.extend(high_quality[:3])
+            filtered_apps.extend(high_quality[:5])  # Увеличили с 3 до 5
             if not high_quality:  # Только если нет высокого качества
-                filtered_apps.extend(low_quality[:1])
+                filtered_apps.extend(low_quality[:2])  # Увеличили с 1 до 2
             
             # Сортируем по релевантности и рейтингу
             results["google_play"] = sorted(
@@ -281,7 +281,7 @@ def main():
                     "term": normalized_query,
                     "country": DEFAULT_COUNTRY,
                     "media": "software",
-                    "limit": 50,
+                    "limit": 100,  # Увеличили с 50 до 100 для лучшего покрытия
                     "entity": "software,iPadSoftware",
                     "lang": "ru_ru"
                 },
@@ -323,11 +323,11 @@ def main():
             ios_medium_quality = [r for r in processed if 50 <= r['match_score'] < 80]
             ios_low_quality = [r for r in processed if 30 <= r['match_score'] < 50]
             
-            # Показываем максимум 3 высокого качества, 1 низкого (если нет высокого)
+            # Показываем максимум 5 высокого качества, 2 низкого (если нет высокого)
             ios_filtered = []
-            ios_filtered.extend(ios_high_quality[:3])
+            ios_filtered.extend(ios_high_quality[:5])  # Увеличили с 3 до 5
             if not ios_high_quality:  # Только если нет высокого качества
-                ios_filtered.extend(ios_low_quality[:1])
+                ios_filtered.extend(ios_low_quality[:2])  # Увеличили с 1 до 2
             
             results["app_store"] = sorted(
                 ios_filtered,
