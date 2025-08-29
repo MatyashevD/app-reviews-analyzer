@@ -10,3 +10,5 @@ python-dotenv>=1.0.0
 rapidfuzz
 requests>=2.31.0
 pillow>=7.1.0,<10
+nltk>=3.8
+textblob>=0.17.0

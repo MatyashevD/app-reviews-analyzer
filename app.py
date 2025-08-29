@@ -5,7 +5,11 @@ import datetime
 import streamlit as st
 import requests
 import pandas as pd
-# import spacy  # Временно отключено для совместимости с Streamlit Cloud
+import nltk
+from textblob import TextBlob
+from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.corpus import stopwords
+from nltk.tag import pos_tag
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 # Fallback для App Store - используем только iTunes API
@@ -33,8 +37,21 @@ def main():
     
     client = OpenAI(api_key=st.secrets["openai_api_key"])
 
-    # spaCy временно отключен для совместимости с Streamlit Cloud
-    nlp = None
+    # Инициализируем NLTK для анализа текста
+    try:
+        # Скачиваем необходимые данные для NLTK
+        nltk.download('punkt', quiet=True)
+        nltk.download('averaged_perceptron_tagger', quiet=True)
+        nltk.download('stopwords', quiet=True)
+        nltk.download('maxent_ne_chunker', quiet=True)
+        nltk.download('words', quiet=True)
+        
+        # Получаем стоп-слова для русского и английского
+        stop_words = set(stopwords.words('english'))
+        nlp_available = True
+    except Exception as e:
+        st.warning(f"⚠️ NLTK недоступен: {str(e)}")
+        nlp_available = False
 
     MAX_RESULTS = 5
     DEFAULT_LANG = 'ru'
@@ -527,7 +544,6 @@ def main():
                 
                 try:
                     # Получаем отзывы из App Store через iTunes API
-                    # Используем fallback метод, так как app-store-web-scraper может не работать
                     itunes_url = f"https://itunes.apple.com/lookup?id={app_store_id}&country=ru"
                     response = requests.get(itunes_url, headers={"User-Agent": "Mozilla/5.0"})
                     
@@ -536,10 +552,40 @@ def main():
                         if data.get('results'):
                             app_info = data['results'][0]
                             
-                            # Получаем отзывы через альтернативный метод
-                            # Используем простой парсинг или возвращаем заглушку
-                            st.info("📱 Отзывы из App Store будут доступны в следующем обновлении")
-                            return []
+                            # Получаем отзывы через RSS feed
+                            reviews_url = f"https://itunes.apple.com/ru/rss/customerreviews/id={app_store_id}/sortBy=mostRecent/json"
+                            reviews_response = requests.get(reviews_url, headers={"User-Agent": "Mozilla/5.0"})
+                            
+                            if reviews_response.status_code == 200:
+                                reviews_data = reviews_response.json()
+                                all_reviews = []
+                                
+                                if 'feed' in reviews_data and 'entry' in reviews_data['feed']:
+                                    entries = reviews_data['feed']['entry']
+                                    # Первый элемент - информация о приложении, пропускаем
+                                    for entry in entries[1:]:
+                                        try:
+                                            # Парсим дату отзыва
+                                            review_date = datetime.datetime.strptime(
+                                                entry.get('updated', {}).get('label', ''), 
+                                                '%Y-%m-%dT%H:%M:%SZ'
+                                            ).date()
+                                            
+                                            # Фильтруем по дате
+                                            if start_date <= review_date <= end_date:
+                                                all_reviews.append((
+                                                    datetime.datetime.combine(review_date, datetime.time.min),
+                                                    entry.get('content', {}).get('label', ''),
+                                                    'App Store',
+                                                    int(entry.get('im:rating', {}).get('label', 0))
+                                                ))
+                                        except Exception as e:
+                                            continue
+                                
+                                return all_reviews
+                            else:
+                                st.warning("Не удалось получить отзывы из App Store")
+                                return []
                         else:
                             st.warning("Приложение не найдено в App Store")
                             return []
@@ -598,12 +644,54 @@ def main():
             else: 
                 ios_ratings.append(rating)
             
-            # Простой анализ ключевых фраз без spaCy
-            words = text.lower().split()
-            for i in range(len(words) - 1):
-                if len(words[i]) > 3 and len(words[i+1]) > 3:
-                    phrase = f"{words[i]} {words[i+1]}"
-                    analysis['key_phrases'][phrase] += 1
+            # Продвинутый анализ ключевых фраз с NLTK
+            if nlp_available:
+                try:
+                    # Токенизируем текст
+                    tokens = word_tokenize(text.lower())
+                    
+                    # Определяем части речи
+                    pos_tags = pos_tag(tokens)
+                    
+                    # Извлекаем ключевые фразы
+                    phrases = []
+                    current_phrase = []
+                    
+                    for token, tag in pos_tags:
+                        # Ищем существительные, прилагательные, имена собственные
+                        if tag.startswith(('NN', 'JJ', 'NNP')) and token not in stop_words and len(token) > 2:
+                            current_phrase.append(token)
+                        else:
+                            if current_phrase:
+                                phrase = ' '.join(current_phrase)
+                                if 2 <= len(current_phrase) <= 3:
+                                    phrases.append(phrase)
+                                current_phrase = []
+                    
+                    # Добавляем последнюю фразу
+                    if current_phrase:
+                        phrase = ' '.join(current_phrase)
+                        if 2 <= len(current_phrase) <= 3:
+                            phrases.append(phrase)
+                    
+                    # Считаем частоту фраз
+                    for phrase in phrases:
+                        analysis['key_phrases'][phrase] += 1
+                        
+                except Exception:
+                    # Fallback: простой анализ по словам
+                    words = text.lower().split()
+                    for i in range(len(words) - 1):
+                        if len(words[i]) > 3 and len(words[i+1]) > 3:
+                            phrase = f"{words[i]} {words[i+1]}"
+                            analysis['key_phrases'][phrase] += 1
+            else:
+                # Простой анализ без NLTK
+                words = text.lower().split()
+                for i in range(len(words) - 1):
+                    if len(words[i]) > 3 and len(words[i+1]) > 3:
+                        phrase = f"{words[i]} {words[i+1]}"
+                        analysis['key_phrases'][phrase] += 1
 
         analysis['gp_rating'] = sum(gp_ratings)/len(gp_ratings) if gp_ratings else 0
         analysis['ios_rating'] = sum(ios_ratings)/len(ios_ratings) if ios_ratings else 0
