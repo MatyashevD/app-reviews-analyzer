@@ -30,24 +30,29 @@ def main():
         menu_items={'About': "### Анализ отзывов из Google Play и App Store"}
     )
     
-    # Простые стили для заголовков
+    # Стили для карточек приложений
     st.markdown("""
     <style>
-    .card-title {
-        font-weight: 600;
-        font-size: 16px;
-        color: #2e2e2e;
-        margin-bottom: 4px;
+    .app-card {
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        max-width: 320px;
+        transition: all 0.2s ease;
     }
-    .card-developer {
-        font-size: 13px;
-        color: #666;
-        margin-bottom: 8px;
+    
+    .app-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        transform: translateY(-1px);
     }
-    .card-metrics {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 12px;
+    
+    .app-card img {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        flex-shrink: 0;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -425,103 +430,70 @@ def main():
                             render_app_card(app, platform_key, color, bg_color, is_high_quality=False)
 
         def render_app_card(app, platform_key, color, bg_color, is_high_quality=False):
-            """Отображает красивую карточку приложения используя Streamlit"""
+            """Отображает карточку приложения с улучшенным дизайном"""
             selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
             is_selected = selected_app.get('id') == app['id']
+            
+            # Определяем цвет релевантности
+            if is_high_quality:
+                relevance_color = "#4CAF50"  # Зеленый для высокого качества
+                border_style = f"3px solid {relevance_color}"
+            else:
+                relevance_color = "#FF9800"  # Оранжевый для среднего/низкого качества
+                border_style = f"2px solid {color}"
             
             # Форматируем рейтинг
             rating_display = f"★ {app['score']:.1f}" if app['score'] > 0 else "Нет рейтинга"
             
-            # Определяем иконку платформы
-            platform_icon = "📱" if platform_key == "ios" else "🎮"
+            st.markdown(f"""
+            <div class="app-card" style="border: {border_style};">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 14px; color: #2e2e2e; margin-bottom: 4px;">
+                            {app['title']}
+                        </div>
+                        <div style="font-size: 12px; color: #a8a8a8; margin-bottom: 6px;">
+                            {app['developer']}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="color: {color}; font-weight: 500;">
+                                {rating_display}
+                            </div>
+                            <div style="
+                                background: {relevance_color}; 
+                                color: white; 
+                                padding: 2px 8px; 
+                                border-radius: 10px; 
+                                font-size: 10px; 
+                                font-weight: 600;
+                            ">
+                                {app['match_score']:.0f}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="
+                    background: {bg_color}; 
+                    color: {color}; 
+                    padding: 4px 12px; 
+                    border-radius: 20px; 
+                    font-size: 12px;
+                    text-align: center;
+                    font-weight: 500;
+                ">
+                    {platform_key.upper()}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
-            # Создаем карточку
-            with st.container():
-                # Основная карточка с границей
-                st.markdown("---")
-                
-                # Заголовок и статус в одной строке
-                col_title, col_status = st.columns([4, 1])
-                
-                with col_title:
-                    if is_selected:
-                        st.markdown(f"### 🎯 {app['title']}")
-                    else:
-                        st.markdown(f"### 📱 {app['title']}")
-                
-                with col_status:
-                    if is_selected:
-                        st.success("✓ Выбрано")
-                    else:
-                        st.info("Не выбрано")
-                
-                # Разработчик
-                st.markdown(f"**👨‍💻 Разработчик:** {app['developer']}")
-                
-                # Метрики в красивых колонках
-                col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
-                
-                with col1:
-                    st.markdown(f"""
-                    <div style="
-                        background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
-                        padding: 10px;
-                        border-radius: 8px;
-                        border-left: 4px solid #007acc;
-                        text-align: center;
-                    ">
-                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Рейтинг</div>
-                        <div style="font-size: 16px; font-weight: bold; color: #007acc;">{rating_display}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with col2:
-                    # Цвет для процента совпадения
-                    match_color = "#4CAF50" if app['match_score'] >= 80 else "#FF9800" if app['match_score'] >= 50 else "#F44336"
-                    st.markdown(f"""
-                    <div style="
-                        background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
-                        padding: 10px;
-                        border-radius: 8px;
-                        border-left: 4px solid {match_color};
-                        text-align: center;
-                    ">
-                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Совпадение</div>
-                        <div style="font-size: 16px; font-weight: bold; color: {match_color};">{app['match_score']:.0f}%</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with col3:
-                    st.markdown(f"""
-                    <div style="
-                        background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
-                        padding: 10px;
-                        border-radius: 8px;
-                        border-left: 4px solid {color};
-                        text-align: center;
-                    ">
-                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Платформа</div>
-                        <div style="font-size: 16px; font-weight: bold; color: {color};">{platform_icon}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with col4:
-                    # Иконка приложения
-                    icon_url = app.get('icon', 'https://via.placeholder.com/48')
-                    st.markdown(f"""
-                    <div style="text-align: center;">
-                        <img src="{icon_url}" style="width: 40px; height: 40px; border-radius: 8px;">
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Разделитель
-                st.markdown("---")
-                
-                # Кнопка выбора
+            # Кнопка с фиксированной шириной - не растягивается на всю карточку
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
                 if st.button(
-                    "✅ Отменить выбор" if is_selected else "📌 Выбрать приложение",
+                    "✓ Выбрано" if is_selected else "Выбрать",
                     key=f"{platform_key}_{app['id']}",
-                    use_container_width=True,
+                    use_container_width=False,  # Кнопка не растягивается
                     type="primary" if is_selected else "secondary"
                 ):
                     if platform_key == "gp":
