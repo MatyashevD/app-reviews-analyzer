@@ -578,7 +578,21 @@ def main():
                                             date_str = entry.get('updated', {}).get('label', '')
                                             st.info(f"📅 Запись {i}: {date_str}")
                                             
-                                            review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').date()
+                                            # Пробуем разные форматы даты
+                                            try:
+                                                # Формат 1: UTC (Z)
+                                                review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').date()
+                                            except ValueError:
+                                                try:
+                                                    # Формат 2: С часовым поясом (-07:00)
+                                                    review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S%z').date()
+                                                except ValueError:
+                                                    try:
+                                                        # Формат 3: Без секунд
+                                                        review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M%z').date()
+                                                    except ValueError:
+                                                        # Формат 4: Только дата
+                                                        review_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
                                             
                                             # Фильтруем по дате
                                             if start_date <= review_date <= end_date:
@@ -613,7 +627,22 @@ def main():
                                                 for entry in alt_entries[1:]:
                                                     try:
                                                         date_str = entry.get('updated', {}).get('label', '')
-                                                        review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').date()
+                                                        
+                                                        # Пробуем разные форматы даты
+                                                        try:
+                                                            # Формат 1: UTC (Z)
+                                                            review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').date()
+                                                        except ValueError:
+                                                            try:
+                                                                # Формат 2: С часовым поясом (-07:00)
+                                                                review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S%z').date()
+                                                            except ValueError:
+                                                                try:
+                                                                    # Формат 3: Без секунд
+                                                                    review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M%z').date()
+                                                                except ValueError:
+                                                                    # Формат 4: Только дата
+                                                                    review_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
                                                         
                                                         if start_date <= review_date <= end_date:
                                                             all_reviews.append((
