@@ -553,23 +553,32 @@ def main():
                             app_info = data['results'][0]
                             
                             # Получаем отзывы через RSS feed
+                            st.info(f"🔍 Ищем отзывы для App Store ID: {app_store_id}")
+                            st.info(f"📅 Диапазон дат: {start_date} - {end_date}")
+                            
                             reviews_url = f"https://itunes.apple.com/ru/rss/customerreviews/id={app_store_id}/sortBy=mostRecent/json"
+                            st.info(f"🔗 URL: {reviews_url}")
+                            
                             reviews_response = requests.get(reviews_url, headers={"User-Agent": "Mozilla/5.0"})
                             
                             if reviews_response.status_code == 200:
                                 reviews_data = reviews_response.json()
+                                st.info(f"✅ RSS получен, статус: {reviews_response.status_code}")
+                                
                                 all_reviews = []
                                 
                                 if 'feed' in reviews_data and 'entry' in reviews_data['feed']:
                                     entries = reviews_data['feed']['entry']
+                                    st.info(f"📝 Найдено записей: {len(entries)}")
+                                    
                                     # Первый элемент - информация о приложении, пропускаем
-                                    for entry in entries[1:]:
+                                    for i, entry in enumerate(entries[1:], 1):
                                         try:
                                             # Парсим дату отзыва
-                                            review_date = datetime.datetime.strptime(
-                                                entry.get('updated', {}).get('label', ''), 
-                                                '%Y-%m-%dT%H:%M:%SZ'
-                                            ).date()
+                                            date_str = entry.get('updated', {}).get('label', '')
+                                            st.info(f"📅 Запись {i}: {date_str}")
+                                            
+                                            review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').date()
                                             
                                             # Фильтруем по дате
                                             if start_date <= review_date <= end_date:
@@ -579,12 +588,48 @@ def main():
                                                     'App Store',
                                                     int(entry.get('im:rating', {}).get('label', 0))
                                                 ))
+                                                st.info(f"✅ Отзыв добавлен: {review_date}")
+                                            else:
+                                                st.info(f"❌ Отзыв вне диапазона: {review_date}")
                                         except Exception as e:
+                                            st.info(f"⚠️ Ошибка парсинга записи {i}: {str(e)}")
                                             continue
+                                
+                                st.info(f"🎯 Итого отзывов в диапазоне: {len(all_reviews)}")
+                                
+                                # Если нет отзывов, пробуем альтернативный метод
+                                if not all_reviews:
+                                    st.info("🔄 Пробуем альтернативный метод...")
+                                    try:
+                                        alt_url = f"https://itunes.apple.com/ru/rss/customerreviews/id={app_store_id}/json"
+                                        alt_response = requests.get(alt_url, headers={"User-Agent": "Mozilla/5.0"})
+                                        
+                                        if alt_response.status_code == 200:
+                                            alt_data = alt_response.json()
+                                            if 'feed' in alt_data and 'entry' in alt_data['feed']:
+                                                alt_entries = alt_data['feed']['entry']
+                                                st.info(f"📝 Альтернативный метод: {len(alt_entries)} записей")
+                                                
+                                                for entry in alt_entries[1:]:
+                                                    try:
+                                                        date_str = entry.get('updated', {}).get('label', '')
+                                                        review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').date()
+                                                        
+                                                        if start_date <= review_date <= end_date:
+                                                            all_reviews.append((
+                                                                datetime.datetime.combine(review_date, datetime.time.min),
+                                                                entry.get('content', {}).get('label', ''),
+                                                                'App Store',
+                                                                int(entry.get('im:rating', {}).get('label', 0))
+                                                            ))
+                                                    except Exception:
+                                                        continue
+                                    except Exception as e:
+                                        st.info(f"⚠️ Альтернативный метод недоступен: {str(e)}")
                                 
                                 return all_reviews
                             else:
-                                st.warning("Не удалось получить отзывы из App Store")
+                                st.warning(f"❌ RSS недоступен, статус: {reviews_response.status_code}")
                                 return []
                         else:
                             st.warning("Приложение не найдено в App Store")
