@@ -5,7 +5,7 @@ import datetime
 import streamlit as st
 import requests
 import pandas as pd
-import spacy
+# import spacy  # Временно отключено для совместимости с Streamlit Cloud
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 # Fallback для App Store - используем только iTunes API
@@ -33,15 +33,8 @@ def main():
     
     client = OpenAI(api_key=st.secrets["openai_api_key"])
 
-    # Загружаем spaCy модель для русского языка
-    try:
-        nlp = spacy.load("ru_core_news_sm")
-    except:
-        # Если модель не найдена, используем базовую модель
-        try:
-            nlp = spacy.load("en_core_web_sm")
-        except:
-            nlp = None
+    # spaCy временно отключен для совместимости с Streamlit Cloud
+    nlp = None
 
     MAX_RESULTS = 5
     DEFAULT_LANG = 'ru'
@@ -605,41 +598,12 @@ def main():
             else: 
                 ios_ratings.append(rating)
             
-            # Анализ ключевых фраз
-            if nlp is not None:
-                try:
-                    doc = nlp(text)
-                    phrases = []
-                    current_phrase = []
-                    
-                    for token in doc:
-                        if token.pos_ in ['NOUN', 'PROPN', 'ADJ'] and not token.is_stop:
-                            current_phrase.append(token.text)
-                        else:
-                            if current_phrase:
-                                phrases.append(' '.join(current_phrase))
-                                current_phrase = []
-                    
-                    if current_phrase:
-                        phrases.append(' '.join(current_phrase))
-                    
-                    for phrase in phrases:
-                        if 2 <= len(phrase.split()) <= 3 and len(phrase) > 4:
-                            analysis['key_phrases'][phrase.lower()] += 1
-                except Exception:
-                    # Fallback: простой анализ по словам
-                    words = text.lower().split()
-                    for i in range(len(words) - 1):
-                        if len(words[i]) > 3 and len(words[i+1]) > 3:
-                            phrase = f"{words[i]} {words[i+1]}"
-                            analysis['key_phrases'][phrase] += 1
-            else:
-                # Простой анализ без spaCy
-                words = text.lower().split()
-                for i in range(len(words) - 1):
-                    if len(words[i]) > 3 and len(words[i+1]) > 3:
-                        phrase = f"{words[i]} {words[i+1]}"
-                        analysis['key_phrases'][phrase] += 1
+            # Простой анализ ключевых фраз без spaCy
+            words = text.lower().split()
+            for i in range(len(words) - 1):
+                if len(words[i]) > 3 and len(words[i+1]) > 3:
+                    phrase = f"{words[i]} {words[i+1]}"
+                    analysis['key_phrases'][phrase] += 1
 
         analysis['gp_rating'] = sum(gp_ratings)/len(gp_ratings) if gp_ratings else 0
         analysis['ios_rating'] = sum(ios_ratings)/len(ios_ratings) if ios_ratings else 0
