@@ -37,11 +37,15 @@ def main():
     try:
         nlp = spacy.load("ru_core_news_sm")
     except OSError:
-        # Если модель не найдена, скачиваем её
-        st.info("📥 Загружаем языковую модель для анализа...")
-        spacy.cli.download("ru_core_news_sm")
-        nlp = spacy.load("ru_core_news_sm")
-        st.success("✅ Языковая модель загружена!")
+        # Если модель не найдена, используем fallback
+        st.warning("⚠️ Русская языковая модель недоступна. Используем базовую модель.")
+        try:
+            # Пробуем загрузить английскую модель как fallback
+            nlp = spacy.load("en_core_web_sm")
+        except OSError:
+            # Если и английская недоступна, используем пустую модель
+            st.error("❌ Не удалось загрузить языковые модели. Анализ ключевых фраз будет ограничен.")
+            nlp = None
 
     MAX_RESULTS = 5
     DEFAULT_LANG = 'ru'
@@ -613,24 +617,41 @@ def main():
             else: 
                 ios_ratings.append(rating)
             
-            doc = nlp(text)
-            phrases = []
-            current_phrase = []
-            
-            for token in doc:
-                if token.pos_ in ['NOUN', 'PROPN', 'ADJ'] and not token.is_stop:
-                    current_phrase.append(token.text)
-                else:
+            # Анализ ключевых фраз с fallback для случая отсутствия spaCy
+            if nlp is not None:
+                try:
+                    doc = nlp(text)
+                    phrases = []
+                    current_phrase = []
+                    
+                    for token in doc:
+                        if token.pos_ in ['NOUN', 'PROPN', 'ADJ'] and not token.is_stop:
+                            current_phrase.append(token.text)
+                        else:
+                            if current_phrase:
+                                phrases.append(' '.join(current_phrase))
+                                current_phrase = []
+                    
                     if current_phrase:
                         phrases.append(' '.join(current_phrase))
-                        current_phrase = []
-            
-            if current_phrase:
-                phrases.append(' '.join(current_phrase))
-            
-            for phrase in phrases:
-                if 2 <= len(phrase.split()) <= 3 and len(phrase) > 4:
-                    analysis['key_phrases'][phrase.lower()] += 1
+                    
+                    for phrase in phrases:
+                        if 2 <= len(phrase.split()) <= 3 and len(phrase) > 4:
+                            analysis['key_phrases'][phrase.lower()] += 1
+                except Exception:
+                    # Fallback: простой анализ по словам
+                    words = text.lower().split()
+                    for i in range(len(words) - 1):
+                        if len(words[i]) > 3 and len(words[i+1]) > 3:
+                            phrase = f"{words[i]} {words[i+1]}"
+                            analysis['key_phrases'][phrase] += 1
+            else:
+                # Простой анализ без spaCy
+                words = text.lower().split()
+                for i in range(len(words) - 1):
+                    if len(words[i]) > 3 and len(words[i+1]) > 3:
+                        phrase = f"{words[i]} {words[i+1]}"
+                        analysis['key_phrases'][phrase] += 1
 
         analysis['gp_rating'] = sum(gp_ratings)/len(gp_ratings) if gp_ratings else 0
         analysis['ios_rating'] = sum(ios_ratings)/len(ios_ratings) if ios_ratings else 0
