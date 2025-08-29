@@ -1,17 +1,17 @@
 streamlit>=1.27.0
 google-play-scraper==1.2.7
-app-store-web-scraper>=0.3.5
-spacy
-pandas==2.2.3
-matplotlib==3.10.0
-python-dateutil==2.9.0
+app-store-web-scraper==0.2.0
+spacy>=3.7.0
+pandas>=2.0.0
+matplotlib>=3.7.0
+python-dateutil>=2.8.0
 python-Levenshtein>=0.21.1
 openai>=1.0.0
 python-dotenv>=1.0.0
-transformers
-torch==2.2.1 --extra-index-url https://download.pytorch.org/whl/cu121
-textblob
-rapidfuzz
+transformers>=4.30.0
+torch>=2.0.0
+textblob>=0.17.0
+rapidfuzz>=3.0.0
 requests>=2.31.0
-pillow>=7.1.0,<10  # Используйте более новую версию Pillow
-ru-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/ru_core_news_sm-3.7.0/ru_core_news_sm-3.7.0.tar.gz
+urllib3>=2.0.0,<3.0.0
+pillow>=9.0.0

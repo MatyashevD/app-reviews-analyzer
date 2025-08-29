@@ -33,11 +33,15 @@ def main():
     
     client = OpenAI(api_key=st.secrets["openai_api_key"])
 
+    # Загружаем spaCy модель для русского языка
     try:
         nlp = spacy.load("ru_core_news_sm")
-    except:
+    except OSError:
+        # Если модель не найдена, скачиваем её
+        st.info("📥 Загружаем языковую модель для анализа...")
         spacy.cli.download("ru_core_news_sm")
         nlp = spacy.load("ru_core_news_sm")
+        st.success("✅ Языковая модель загружена!")
 
     MAX_RESULTS = 5
     DEFAULT_LANG = 'ru'
