@@ -30,47 +30,24 @@ def main():
         menu_items={'About': "### Анализ отзывов из Google Play и App Store"}
     )
     
-    # CSS стили для карточек
+    # Простые стили для заголовков
     st.markdown("""
     <style>
-    .app-card {
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 12px;
-        background: white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        max-width: 320px;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        position: relative;
+    .card-title {
+        font-weight: 600;
+        font-size: 16px;
+        color: #2e2e2e;
+        margin-bottom: 4px;
     }
-    
-    .app-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    .card-developer {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 8px;
     }
-    
-    .app-card.selected {
-        border: 3px solid #4CAF50;
-        background: linear-gradient(135deg, white, #e8f5e8);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-    }
-    
-    .selection-indicator {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        background: #4CAF50;
-        color: white;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
+    .card-metrics {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: bold;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        gap: 8px;
+        margin-bottom: 12px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -448,17 +425,15 @@ def main():
                             render_app_card(app, platform_key, color, bg_color, is_high_quality=False)
 
         def render_app_card(app, platform_key, color, bg_color, is_high_quality=False):
-            """Отображает компактную карточку приложения"""
+            """Отображает карточку приложения используя только Streamlit компоненты"""
             selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
             is_selected = selected_app.get('id') == app['id']
             
             # Определяем цвет релевантности
             if is_high_quality:
                 relevance_color = "#4CAF50"  # Зеленый для высокого качества
-                border_style = f"2px solid {relevance_color}"
             else:
                 relevance_color = "#FF9800"  # Оранжевый для среднего/низкого качества
-                border_style = f"1px solid {color}"
             
             # Форматируем рейтинг
             rating_display = f"★ {app['score']:.1f}" if app['score'] > 0 else "Нет рейтинга"
@@ -466,92 +441,41 @@ def main():
             # Определяем иконку платформы
             platform_icon = "📱" if platform_key == "ios" else "🎮"
             
-            # Определяем CSS класс для выбранной карточки
-            card_class = "app-card selected" if is_selected else "app-card"
-            
-            # Создаем карточку с CSS классами
-            st.markdown(f"""
-            <div class="{card_class}">
-                {f'<div class="selection-indicator">✓</div>' if is_selected else ''}
-                <div style="display: flex; align-items: flex-start; gap: 12px;">
-                    <img src="{app.get('icon', 'https://via.placeholder.com/48')}" 
-                         style="width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;">
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="
-                            font-weight: 600; 
-                            font-size: 15px; 
-                            color: #2e2e2e; 
-                            margin-bottom: 4px; 
-                            line-height: 1.2;
-                            overflow: hidden;
-                            text-overflow: ellipsis;
-                            white-space: nowrap;
-                        ">
-                            {app['title']}
-                        </div>
-                        <div style="
-                            font-size: 12px; 
-                            color: #666; 
-                            margin-bottom: 8px; 
-                            line-height: 1.2;
-                            overflow: hidden;
-                            text-overflow: ellipsis;
-                            white-space: nowrap;
-                        ">
-                            {app['developer']}
-                        </div>
-                        <div style="
-                            display: flex; 
-                            align-items: center; 
-                            gap: 8px; 
-                            margin-bottom: 8px;
-                        ">
-                            <span style="color: {color}; font-weight: 500; font-size: 13px;">
-                                {rating_display}
-                            </span>
-                            <span style="
-                                background: {relevance_color}; 
-                                color: white; 
-                                padding: 2px 6px; 
-                                border-radius: 8px; 
-                                font-size: 10px; 
-                                font-weight: 600;
-                            ">
-                                🎯 {app['match_score']:.0f}%
-                            </span>
-                            <span style="
-                                background: {bg_color}; 
-                                color: {color}; 
-                                padding: 2px 6px; 
-                                border-radius: 8px; 
-                                font-size: 10px; 
-                                font-weight: 500;
-                            ">
-                                {platform_icon}
-                            </span>
-                        </div>
-                        <div style="
-                            text-align: center; 
-                            padding: 8px; 
-                            background: {bg_color}30; 
-                            border-radius: 8px; 
-                            font-size: 11px; 
-                            color: {color}; 
-                            font-weight: 500;
-                            border: 1px dashed {color}50;
-                        ">
-                            {is_selected and "✓ Выбрано" or "👆 Нажмите для выбора"}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Красивая кнопка под карточкой
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
+            # Создаем карточку с помощью Streamlit контейнеров
+            with st.container():
+                # Заголовок карточки
+                if is_selected:
+                    st.markdown(f"### 🎯 {app['title']}")
+                else:
+                    st.markdown(f"### 📱 {app['title']}")
+                
+                # Разработчик
+                st.markdown(f"**Разработчик:** {app['developer']}")
+                
+                # Метрики в колонках
+                col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+                
+                with col1:
+                    st.metric("Рейтинг", rating_display)
+                
+                with col2:
+                    st.metric("Совпадение", f"{app['match_score']:.0f}%")
+                
+                with col3:
+                    st.metric("Платформа", platform_icon)
+                
+                with col4:
+                    if is_selected:
+                        st.success("✓ Выбрано")
+                    else:
+                        st.info("Не выбрано")
+                
+                # Разделитель
+                st.divider()
+                
+                # Кнопка выбора
                 if st.button(
-                    "✓ Выбрано" if is_selected else "📌 Выбрать",
+                    "✅ Отменить выбор" if is_selected else "📌 Выбрать приложение",
                     key=f"{platform_key}_{app['id']}",
                     use_container_width=True,
                     type="primary" if is_selected else "secondary"
