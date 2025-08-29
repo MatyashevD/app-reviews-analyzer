@@ -487,15 +487,13 @@ def main():
             </div>
             """, unsafe_allow_html=True)
             
-            # Кнопка с фиксированной шириной - не растягивается на всю карточку
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                if st.button(
-                    "✓ Выбрано" if is_selected else "Выбрать",
-                    key=f"{platform_key}_{app['id']}",
-                    use_container_width=False,  # Кнопка не растягивается
-                    type="primary" if is_selected else "secondary"
-                ):
+            # Кнопка на всю ширину карточки
+            if st.button(
+                "✓ Выбрано" if is_selected else "Выбрать",
+                key=f"{platform_key}_{app['id']}",
+                use_container_width=True,  # Кнопка растягивается на всю ширину
+                type="primary" if is_selected else "secondary"
+            ):
                     if platform_key == "gp":
                         new_selection = app if not is_selected else None
                         st.session_state.selected_gp_app = new_selection
