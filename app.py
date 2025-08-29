@@ -403,89 +403,126 @@ def main():
                             render_app_card(app, platform_key, color, bg_color, is_high_quality=False)
 
         def render_app_card(app, platform_key, color, bg_color, is_high_quality=False):
-            """Отображает карточку приложения с улучшенным дизайном"""
+            """Отображает компактную карточку приложения"""
             selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
             is_selected = selected_app.get('id') == app['id']
             
             # Определяем цвет релевантности
             if is_high_quality:
                 relevance_color = "#4CAF50"  # Зеленый для высокого качества
-                border_style = f"3px solid {relevance_color}"
+                border_style = f"2px solid {relevance_color}"
             else:
                 relevance_color = "#FF9800"  # Оранжевый для среднего/низкого качества
-                border_style = f"2px solid {color}"
+                border_style = f"1px solid {color}"
             
             # Форматируем рейтинг
             rating_display = f"★ {app['score']:.1f}" if app['score'] > 0 else "Нет рейтинга"
             
+            # Определяем иконку платформы
+            platform_icon = "📱" if platform_key == "ios" else "🎮"
+            
             st.markdown(f"""
-            <div class="app-card" style="border: {border_style};">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                    <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; font-size: 14px; color: #2e2e2e; margin-bottom: 4px;">
+            <div class="app-card" style="
+                border: {border_style}; 
+                border-radius: 12px; 
+                padding: 16px; 
+                margin-bottom: 12px; 
+                background: white; 
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                max-width: 320px;
+                transition: all 0.2s ease;
+            ">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <img src="{app.get('icon', 'https://via.placeholder.com/48')}" 
+                         style="width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="
+                            font-weight: 600; 
+                            font-size: 15px; 
+                            color: #2e2e2e; 
+                            margin-bottom: 4px; 
+                            line-height: 1.2;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                        ">
                             {app['title']}
                         </div>
-                        <div style="font-size: 12px; color: #a8a8a8; margin-bottom: 6px;">
+                        <div style="
+                            font-size: 12px; 
+                            color: #666; 
+                            margin-bottom: 8px; 
+                            line-height: 1.2;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                        ">
                             {app['developer']}
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div style="color: {color}; font-weight: 500;">
+                        <div style="
+                            display: flex; 
+                            align-items: center; 
+                            gap: 8px; 
+                            margin-bottom: 12px;
+                        ">
+                            <span style="color: {color}; font-weight: 500; font-size: 13px;">
                                 {rating_display}
-                            </div>
-                            <div style="
+                            </span>
+                            <span style="
                                 background: {relevance_color}; 
                                 color: white; 
-                                padding: 2px 8px; 
-                                border-radius: 10px; 
+                                padding: 2px 6px; 
+                                border-radius: 8px; 
                                 font-size: 10px; 
                                 font-weight: 600;
                             ">
-                                {app['match_score']:.0f}%
-                            </div>
+                                🎯 {app['match_score']:.0f}%
+                            </span>
+                            <span style="
+                                background: {bg_color}; 
+                                color: {color}; 
+                                padding: 2px 6px; 
+                                border-radius: 8px; 
+                                font-size: 10px; 
+                                font-weight: 500;
+                            ">
+                                {platform_icon}
+                            </span>
                         </div>
                     </div>
-                </div>
-                <div style="
-                    background: {bg_color}; 
-                    color: {color}; 
-                    padding: 4px 12px; 
-                    border-radius: 20px; 
-                    font-size: 12px;
-                    text-align: center;
-                    font-weight: 500;
-                ">
-                    {platform_key.upper()}
                 </div>
             </div>
             """, unsafe_allow_html=True)
             
-            if st.button(
-                "✓ Выбрано" if is_selected else "Выбрать",
-                key=f"{platform_key}_{app['id']}",
-                use_container_width=True,
-                type="primary" if is_selected else "secondary"
-            ):
-                if platform_key == "gp":
-                    new_selection = app if not is_selected else None
-                    st.session_state.selected_gp_app = new_selection
-                    if new_selection and new_selection.get('release_date'):
-                        st.session_state.gp_release_dates = [{
-                            'date': new_selection['release_date'],
-                            'platform': 'Google Play'
-                        }]
-                    else:
-                        st.session_state.gp_release_dates = []
-                        
-                elif platform_key == "ios":
-                    new_selection = app if not is_selected else None
-                    st.session_state.selected_ios_app = new_selection
-                    if new_selection and new_selection.get('release_date'):
-                        st.session_state.ios_release_dates = [{
-                            'date': new_selection['release_date'],
-                            'platform': 'App Store'
-                        }]
-                st.rerun()
+            # Компактная кнопка по центру
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button(
+                    "✓ Выбрано" if is_selected else "Выбрать",
+                    key=f"{platform_key}_{app['id']}",
+                    use_container_width=False,
+                    type="primary" if is_selected else "secondary"
+                ):
+                    if platform_key == "gp":
+                        new_selection = app if not is_selected else None
+                        st.session_state.selected_gp_app = new_selection
+                        if new_selection and new_selection.get('release_date'):
+                            st.session_state.gp_release_dates = [{
+                                'date': new_selection['release_date'],
+                                'platform': 'Google Play'
+                            }]
+                        else:
+                            st.session_state.gp_release_dates = []
+                            
+                    elif platform_key == "ios":
+                        new_selection = app if not is_selected else None
+                        st.session_state.selected_ios_app = new_selection
+                        if new_selection and new_selection.get('release_date'):
+                            st.session_state.ios_release_dates = [{
+                                'date': new_selection['release_date'],
+                                'platform': 'App Store'
+                            }]
+                    st.rerun()
 
         render_platform(" App Store", results["app_store"], "ios", "#399eff", "#cce2ff")
         render_platform("📲 Google Play", results["google_play"], "gp", "#36c55f", "#e3ffeb")
