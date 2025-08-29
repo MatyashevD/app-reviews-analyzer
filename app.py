@@ -8,7 +8,8 @@ import pandas as pd
 import spacy
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from app_store_scraper import AppStore
+# Fallback для App Store - используем только iTunes API
+# from app_store_scraper import AppStore  # Отключаем проблемный модуль
 from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
 from google_play_scraper import app as gp_app
@@ -524,35 +525,9 @@ def main():
                     st.error("Не выбрано приложение из App Store")
                     return []                
 
-                try:
-                    # Используем правильный API для app_store_scraper
-                    app_store = AppStore(
-                        country=DEFAULT_COUNTRY.lower(),
-                        app_name=selected_app['title'],
-                        app_id=selected_app['app_store_id']
-                    )
-                    
-                    # Собираем отзывы
-                    reviews = []
-                    for review in app_store.review(how_many=500):
-                        try:
-                            # Проверяем, есть ли атрибут date
-                            if hasattr(review, 'date') and review.date:
-                                review_date = review.date.date()
-                                
-                                if start_date <= review_date <= end_date:
-                                    reviews.append((
-                                        review.date.replace(tzinfo=None),
-                                        review.review,
-                                        'App Store',
-                                        review.rating
-                                    ))
-                        except Exception as e:
-                            continue
-                    return reviews
-                except Exception as e:
-                    st.error(f"Ошибка получения отзывов из App Store: {str(e)}")
-                    return []
+                # Временно отключаем получение отзывов из App Store
+                st.warning("⚠️ Получение отзывов из App Store временно недоступно")
+                return []
     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
