@@ -8,7 +8,7 @@ import pandas as pd
 import spacy
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from app_store_web_scraper import AppStoreEntry, AppStoreSession
+from app_store_scraper import AppStore
 from openai import OpenAI
 from google_play_scraper import search, reviews as gp_reviews, Sort
 from google_play_scraper import app as gp_app
@@ -58,12 +58,59 @@ def main():
         results = {"google_play": [], "app_store": []}
         normalized_query = query.strip().lower()
         
+        # Специальная обработка для известных приложений
+        special_queries = []
+        if 'wb' in normalized_query and 'flot' in normalized_query:
+            special_queries.extend(['wb flot', 'wbflot', 'wildberries flot', 'wildberries taxi'])
+        elif 'wb' in normalized_query:
+            special_queries.extend(['wildberries', 'wb', 'вб'])
+        elif 'vk' in normalized_query:
+            special_queries.extend(['вконтакте', 'vkontakte', 'vk'])
+        elif 'tg' in normalized_query or 'telegram' in normalized_query:
+            special_queries.extend(['telegram', 'tg', 'телеграм'])
+        
+        # Добавляем специальные запросы к основному
+        all_search_queries = [normalized_query] + special_queries
+        
         # Поиск в Google Play
         try:
-            gp_results = search(normalized_query, lang="ru", country="ru", n_hits=20)
+            all_gp_results = []
+            
+            # Ищем по всем вариантам запроса
+            for search_query in all_search_queries:
+                try:
+                    # Увеличиваем количество результатов для лучшего покрытия
+                    gp_results = search(search_query, lang="ru", country="ru", n_hits=50)
+                    all_gp_results.extend(gp_results)
+                    
+                    # Если основной поиск не дал результатов, пробуем альтернативные варианты
+                    if not gp_results:
+                        # Пробуем поиск без учета языка и страны
+                        gp_results = search(search_query, lang="en", country="us", n_hits=30)
+                        if gp_results:
+                            all_gp_results.extend(gp_results)
+                        
+                    # Если все еще нет результатов, пробуем поиск по частям
+                    if not gp_results and ' ' in search_query:
+                        parts = search_query.split()
+                        for part in parts:
+                            if len(part) >= 2:
+                                part_results = search(part, lang="ru", country="ru", n_hits=20)
+                                if part_results:
+                                    all_gp_results.extend(part_results)
+                except Exception as e:
+                    continue
+            
+            # Убираем дубликаты по appId и фильтруем по качеству
+            seen_apps = set()
+            unique_gp_results = []
+            for r in all_gp_results:
+                if r["appId"] not in seen_apps:
+                    seen_apps.add(r["appId"])
+                    unique_gp_results.append(r)
             
             apps = []
-            for r in gp_results:
+            for r in unique_gp_results:
                 try:
                     # 2) Сначала пытаемся получить короткий формат 'released'
                     rel_date = None
@@ -110,27 +157,62 @@ def main():
                                             updated.replace("Z", "+00:00")
                                         ).date()
                         except Exception as e:
-                            st.error(f"Ошибка получения деталей приложения {r['appId']}: {str(e)}")
-                            rel_date = None
+                            # Убираем ошибку в UI, только логируем
+                            continue
         
-                    # Формируем запись
+                    # Улучшенный алгоритм подсчета match_score
+                    title_lower = r["title"].lower()
+                    developer_lower = r.get("developer", "").lower()
+                    
+                    # Считаем score для названия и разработчика
+                    title_score = max(
+                        fuzz.token_set_ratio(normalized_query, title_lower),
+                        fuzz.partial_ratio(normalized_query, title_lower),
+                        fuzz.ratio(normalized_query, title_lower)
+                    )
+                    
+                    developer_score = 0
+                    if developer_lower:
+                        developer_score = max(
+                            fuzz.token_set_ratio(normalized_query, developer_lower),
+                            fuzz.partial_ratio(normalized_query, developer_lower)
+                        )
+                    
+                    # Комбинированный score
+                    combined_score = max(title_score, developer_score)
+                    
+                    # Формируем запись - убираем фильтр по score > 0
                     score = r.get("score", 0) or 0
-                    if score > 0:
-                        apps.append({
-                            "id": r["appId"],
-                            "title": r["title"],
-                            "developer": r.get("developer"),
-                            "score": score,
-                            "release_date": rel_date,
-                            "platform": "Google Play",
-                            "match_score": fuzz.token_set_ratio(normalized_query, r["title"].lower()),
-                            "icon": r.get("icon")
-                        })
+                    apps.append({
+                        "id": r["appId"],
+                        "title": r["title"],
+                        "developer": r.get("developer"),
+                        "score": score,
+                        "release_date": rel_date,
+                        "platform": "Google Play",
+                        "match_score": combined_score,
+                        "icon": r.get("icon")
+                    })
                 except Exception as e:
-                    st.error(f"Ошибка обработки приложения: {str(e)}")
                     continue
         
-            results["google_play"] = apps
+            # Улучшенная фильтрация и сортировка результатов
+            # Группируем по качеству релевантности
+            high_quality = [app for app in apps if app['match_score'] >= 80]  # Высокое качество
+            medium_quality = [app for app in apps if 50 <= app['match_score'] < 80]  # Среднее качество
+            low_quality = [app for app in apps if 30 <= app['match_score'] < 50]  # Низкое качество
+            
+            # Показываем максимум 3 высокого качества, 1 низкого (если нет высокого)
+            filtered_apps = []
+            filtered_apps.extend(high_quality[:3])
+            if not high_quality:  # Только если нет высокого качества
+                filtered_apps.extend(low_quality[:1])
+            
+            # Сортируем по релевантности и рейтингу
+            results["google_play"] = sorted(
+                filtered_apps,
+                key=lambda x: (-x['match_score'], -x['score']),
+            )
         
         except Exception as e:
             st.error(f"Ошибка поиска в Google Play: {str(e)}")
@@ -180,10 +262,22 @@ def main():
                 except Exception as e:
                     continue
 
+            # Улучшенная фильтрация для App Store
+            # Группируем по качеству релевантности
+            ios_high_quality = [r for r in processed if r['match_score'] >= 80]
+            ios_medium_quality = [r for r in processed if 50 <= r['match_score'] < 80]
+            ios_low_quality = [r for r in processed if 30 <= r['match_score'] < 50]
+            
+            # Показываем максимум 3 высокого качества, 1 низкого (если нет высокого)
+            ios_filtered = []
+            ios_filtered.extend(ios_high_quality[:3])
+            if not ios_high_quality:  # Только если нет высокого качества
+                ios_filtered.extend(ios_low_quality[:1])
+            
             results["app_store"] = sorted(
-                [r for r in processed if r['score'] > 0],
+                ios_filtered,
                 key=lambda x: (-x['match_score'], -x['score']),
-            )[:MAX_RESULTS]
+            )
             
         except Exception as e:
             st.error(f"Ошибка поиска в App Store: {str(e)}")
@@ -269,58 +363,113 @@ def main():
 
         def render_platform(platform_name, platform_data, platform_key, color, bg_color):
             if platform_data:
-                st.markdown(f"### {platform_name}")
-                cols = st.columns(len(platform_data))
-                for idx, app in enumerate(platform_data):
-                    with cols[idx]:
-                        # Исправленная строка:
-                        selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
-                        is_selected = selected_app.get('id') == app['id']
-                        
-                        st.markdown(f"""
-                        <div class="app-card">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
-                                <div>
-                                    <div style="font-weight: 600; font-size: 14px; color: #2e2e2e;">{app['title']}</div>
-                                    <div style="font-size: 12px; color: #a8a8a8;">{app['developer']}</div>
-                                </div>
+                # Группируем приложения по качеству релевантности
+                high_quality = [app for app in platform_data if app['match_score'] >= 80]
+                medium_quality = [app for app in platform_data if 50 <= app['match_score'] < 80]
+                low_quality = [app for app in platform_data if 30 <= app['match_score'] < 50]
+                
+                # Показываем высокое качество первым
+                if high_quality:
+                    st.markdown(f"### 🎯 {platform_name} - Лучшие совпадения ({len(high_quality)})")
+                    cols = st.columns(min(len(high_quality), 3))
+                    for idx, app in enumerate(high_quality):
+                        with cols[idx]:
+                            render_app_card(app, platform_key, color, bg_color, is_high_quality=True)
+                
+                # Убираем показ среднего качества - оставляем только лучшие
+                
+                # Показываем низкое качество только если нет других результатов
+                if low_quality and not high_quality and not medium_quality:
+                    st.markdown(f"### 💡 {platform_name} - Возможные совпадения ({len(low_quality)})")
+                    cols = st.columns(min(len(low_quality), 2))
+                    for idx, app in enumerate(low_quality):
+                        with cols[idx]:
+                            render_app_card(app, platform_key, color, bg_color, is_high_quality=False)
+
+        def render_app_card(app, platform_key, color, bg_color, is_high_quality=False):
+            """Отображает карточку приложения с улучшенным дизайном"""
+            selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
+            is_selected = selected_app.get('id') == app['id']
+            
+            # Определяем цвет релевантности
+            if is_high_quality:
+                relevance_color = "#4CAF50"  # Зеленый для высокого качества
+                border_style = f"3px solid {relevance_color}"
+            else:
+                relevance_color = "#FF9800"  # Оранжевый для среднего/низкого качества
+                border_style = f"2px solid {color}"
+            
+            # Форматируем рейтинг
+            rating_display = f"★ {app['score']:.1f}" if app['score'] > 0 else "Нет рейтинга"
+            
+            st.markdown(f"""
+            <div class="app-card" style="border: {border_style};">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 14px; color: #2e2e2e; margin-bottom: 4px;">
+                            {app['title']}
+                        </div>
+                        <div style="font-size: 12px; color: #a8a8a8; margin-bottom: 6px;">
+                            {app['developer']}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="color: {color}; font-weight: 500;">
+                                {rating_display}
                             </div>
-                            <div style="color: {color}; font-weight: 500; margin-bottom: 10px;">
-                                ★ {app['score']:.1f}
-                            </div>
-                            <div style="background: {bg_color}; color: {color}; 
-                                padding: 4px 12px; border-radius: 20px; font-size: 12px;">
-                                {platform_name}
+                            <div style="
+                                background: {relevance_color}; 
+                                color: white; 
+                                padding: 2px 8px; 
+                                border-radius: 10px; 
+                                font-size: 10px; 
+                                font-weight: 600;
+                            ">
+                                {app['match_score']:.0f}%
                             </div>
                         </div>
-                        """, unsafe_allow_html=True)
+                    </div>
+                </div>
+                <div style="
+                    background: {bg_color}; 
+                    color: {color}; 
+                    padding: 4px 12px; 
+                    border-radius: 20px; 
+                    font-size: 12px;
+                    text-align: center;
+                    font-weight: 500;
+                ">
+                    {platform_key.upper()}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button(
+                "✓ Выбрано" if is_selected else "Выбрать",
+                key=f"{platform_key}_{app['id']}",
+                use_container_width=True,
+                type="primary" if is_selected else "secondary"
+            ):
+                if platform_key == "gp":
+                    new_selection = app if not is_selected else None
+                    st.session_state.selected_gp_app = new_selection
+                    if new_selection and new_selection.get('release_date'):
+                        st.session_state.gp_release_dates = [{
+                            'date': new_selection['release_date'],
+                            'platform': 'Google Play'
+                        }]
+                    else:
+                        st.session_state.gp_release_dates = []
                         
-                        if st.button(
-                            "✓ Выбрано" if is_selected else "Выбрать",
-                            key=f"{platform_key}_{app['id']}",
-                            use_container_width=True
-                        ):
-                            if platform_key == "gp":
-                                new_selection = app if not is_selected else None
-                                st.session_state.selected_gp_app = new_selection
-                                if new_selection and new_selection.get('release_date'):
-                                    st.session_state.gp_release_dates = [{
-                                        'date': new_selection['release_date'],
-                                        'platform': 'Google Play'
-                                    }]
-                                else:
-                                    st.session_state.gp_release_dates = []
-                                    
-                            elif platform_key == "ios":
-                                new_selection = app if not is_selected else None
-                                st.session_state.selected_ios_app = new_selection
-                                if new_selection and new_selection.get('release_date'):
-                                    st.session_state.ios_release_dates = [{
-                                        'date': new_selection['release_date'],
-                                        'platform': 'App Store'
-                                    }]
-                            st.rerun()
+                elif platform_key == "ios":
+                    new_selection = app if not is_selected else None
+                    st.session_state.selected_ios_app = new_selection
+                    if new_selection and new_selection.get('release_date'):
+                        st.session_state.ios_release_dates = [{
+                            'date': new_selection['release_date'],
+                            'platform': 'App Store'
+                        }]
+                st.rerun()
 
         render_platform(" App Store", results["app_store"], "ios", "#399eff", "#cce2ff")
         render_platform("📲 Google Play", results["google_play"], "gp", "#36c55f", "#e3ffeb")
@@ -375,34 +524,35 @@ def main():
                     st.error("Не выбрано приложение из App Store")
                     return []                
 
-                session = AppStoreSession(
-                    delay=0.5,
-                    retries=3
-                )
-    
-                app_entry = AppStoreEntry(
-                    app_id=selected_app['app_store_id'],
-                    country=DEFAULT_COUNTRY.lower(),
-                    session=session
-                )
-    
-                # Собираем только свежие отзывы
-                reviews = []
-                for review in app_entry.reviews(limit=500):
-                    try:
-                        utc_time = review.date.astimezone(datetime.timezone.utc)
-                        review_date = utc_time.date()
-                     
-                        if start_date <= review_date <= end_date:
-                            reviews.append((
-                                utc_time.replace(tzinfo=None),
-                                review.review,
-                                'App Store',
-                                review.rating
-                            ))
-                    except Exception as e:
-                        continue
-                return reviews
+                try:
+                    # Используем правильный API для app_store_scraper
+                    app_store = AppStore(
+                        country=DEFAULT_COUNTRY.lower(),
+                        app_name=selected_app['title'],
+                        app_id=selected_app['app_store_id']
+                    )
+                    
+                    # Собираем отзывы
+                    reviews = []
+                    for review in app_store.review(how_many=500):
+                        try:
+                            # Проверяем, есть ли атрибут date
+                            if hasattr(review, 'date') and review.date:
+                                review_date = review.date.date()
+                                
+                                if start_date <= review_date <= end_date:
+                                    reviews.append((
+                                        review.date.replace(tzinfo=None),
+                                        review.review,
+                                        'App Store',
+                                        review.rating
+                                    ))
+                        except Exception as e:
+                            continue
+                    return reviews
+                except Exception as e:
+                    st.error(f"Ошибка получения отзывов из App Store: {str(e)}")
+                    return []
     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
