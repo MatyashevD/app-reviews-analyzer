@@ -833,6 +833,78 @@ def main():
         
         return analysis
 
+    def analyze_key_themes(texts: list) -> dict:
+        """Анализирует ключевые темы с контекстом и группировкой"""
+        try:
+            # Собираем все тексты
+            all_text = " ".join(texts).lower()
+            
+            # Определяем основные тематические категории
+            theme_categories = {
+                "🚗 Транспорт и логистика": [
+                    "время доставки", "время в пути", "пробки", "маршрут", "навигация",
+                    "водитель", "такси", "заказ", "поездка", "дорога", "перевозка"
+                ],
+                "⏰ Время и скорость": [
+                    "быстро", "медленно", "долго", "время", "скорость", "ожидание",
+                    "задержка", "оперативность", "своевременно"
+                ],
+                "💰 Цены и оплата": [
+                    "цена", "стоимость", "дорого", "дешево", "оплата", "тариф",
+                    "расходы", "экономия", "выгодно"
+                ],
+                "📱 Приложение и интерфейс": [
+                    "приложение", "интерфейс", "удобно", "просто", "понятно",
+                    "функции", "возможности", "дизайн", "работает", "баги"
+                ],
+                "👥 Сервис и поддержка": [
+                    "поддержка", "сервис", "помощь", "обслуживание", "клиент",
+                    "качество", "отношение", "внимание"
+                ],
+                "🔒 Безопасность": [
+                    "безопасность", "защита", "конфиденциальность", "данные",
+                    "личная информация", "приватность"
+                ]
+            }
+            
+            # Анализируем каждую категорию
+            theme_scores = {}
+            for theme_name, keywords in theme_categories.items():
+                score = 0
+                examples = []
+                
+                for keyword in keywords:
+                    if keyword in all_text:
+                        # Считаем упоминания
+                        count = all_text.count(keyword)
+                        score += count
+                        
+                        # Ищем контекст (предложение с ключевым словом)
+                        for text in texts:
+                            sentences = text.split('.')
+                            for sentence in sentences:
+                                if keyword in sentence.lower():
+                                    # Очищаем и обрезаем предложение
+                                    clean_sentence = sentence.strip()
+                                    if len(clean_sentence) > 10 and len(clean_sentence) < 200:
+                                        examples.append(clean_sentence)
+                                        break
+                
+                if score > 0:
+                    theme_scores[theme_name] = {
+                        'score': score,
+                        'examples': examples[:3]  # Максимум 3 примера
+                    }
+            
+            # Сортируем по убыванию score
+            sorted_themes = dict(sorted(theme_scores.items(), key=lambda x: x[1]['score'], reverse=True))
+            
+            return sorted_themes
+            
+        except Exception as e:
+            # Fallback: возвращаем пустой словарь
+            return {}
+
     def display_analysis(analysis: dict, filtered_reviews: list, start_date: datetime.date, end_date: datetime.date):
         st.header("📊 Результаты анализа", divider="rainbow")
         
@@ -844,10 +916,47 @@ def main():
             cols[1].metric("Google Play", analysis['platform_counts'].get('Google Play', 0), f"★ {analysis['gp_rating']:.1f}")
             cols[2].metric("App Store", analysis['platform_counts'].get('App Store', 0), f"★ {analysis['ios_rating']:.1f}")
             
-            st.subheader("Ключевые темы")
+            # Анализируем ключевые темы с контекстом
+            st.subheader("🎯 Ключевые темы")
+            
+            # Получаем тексты отзывов для анализа тем
+            review_texts = [r[1] for r in filtered_reviews]
+            key_themes = analyze_key_themes(review_texts)
+            
+            if key_themes:
+                # Показываем тематические категории
+                for theme_name, theme_data in key_themes.items():
+                    with st.expander(f"{theme_name} ({theme_data['score']} упоминаний)", expanded=True):
+                        st.markdown(f"**📊 Общий счет:** {theme_data['score']}")
+                        
+                        if theme_data['examples']:
+                            st.markdown("**💬 Примеры из отзывов:**")
+                            for i, example in enumerate(theme_data['examples'], 1):
+                                st.markdown(f"{i}. *\"{example}...\"*")
+                        else:
+                            st.info("Примеры контекста не найдены")
+            else:
+                st.info("Тематический анализ недоступен")
+            
+            # Показываем также традиционные ключевые фразы
             if analysis['key_phrases']:
-                for phrase, count in analysis['key_phrases'].most_common(10):
-                    st.write(f"- **{phrase}** ({count} упоминаний)")
+                st.markdown("---")
+                st.subheader("🔤 Частые фразы")
+                cols = st.columns(2)
+                
+                # Группируем фразы по длине для лучшего отображения
+                short_phrases = [(p, c) for p, c in analysis['key_phrases'].most_common(20) if len(p.split()) <= 2]
+                long_phrases = [(p, c) for p, c in analysis['key_phrases'].most_common(20) if len(p.split()) > 2]
+                
+                with cols[0]:
+                    st.markdown("**Короткие фразы:**")
+                    for phrase, count in short_phrases[:10]:
+                        st.markdown(f"• **{phrase}** ({count})")
+                
+                with cols[1]:
+                    st.markdown("**Длинные фразы:**")
+                    for phrase, count in long_phrases[:10]:
+                        st.markdown(f"• **{phrase}** ({count})")
             
             if analysis['ai_analysis']:
                 st.markdown("---")
