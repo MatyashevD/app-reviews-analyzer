@@ -768,6 +768,9 @@ def main():
         
         gp_ratings, ios_ratings = [], []
         
+        # Собираем все тексты для оптимизированного анализа
+        all_texts = []
+        
         for _, text, platform, rating in filtered_reviews:
             analysis['platform_counts'][platform] += 1
             if platform == 'Google Play': 
@@ -775,49 +778,54 @@ def main():
             else: 
                 ios_ratings.append(rating)
             
-            # Продвинутый анализ ключевых фраз с NLTK
-            if nlp_available:
-                try:
-                    # Токенизируем текст
-                    tokens = word_tokenize(text.lower())
+            all_texts.append(text)
+        
+        # Оптимизированный анализ ключевых фраз (только для первых 100 отзывов)
+        sample_size = min(100, len(all_texts))
+        sample_texts = all_texts[:sample_size]
+        
+        if nlp_available and sample_size > 0:
+            try:
+                # Объединяем тексты для анализа
+                combined_text = " ".join(sample_texts).lower()
+                tokens = word_tokenize(combined_text)
+                pos_tags = pos_tag(tokens)
+                
+                # Извлекаем ключевые фразы
+                phrases = []
+                current_phrase = []
+                
+                for token, tag in pos_tags:
+                    if tag.startswith(('NN', 'JJ', 'NNP')) and token not in stop_words and len(token) > 2:
+                        current_phrase.append(token)
+                    else:
+                        if current_phrase:
+                            phrase = ' '.join(current_phrase)
+                            if 2 <= len(current_phrase) <= 3:
+                                phrases.append(phrase)
+                            current_phrase = []
+                
+                # Добавляем последнюю фразу
+                if current_phrase:
+                    phrase = ' '.join(current_phrase)
+                    if 2 <= len(current_phrase) <= 3:
+                        phrases.append(phrase)
+                
+                # Считаем частоту фраз
+                for phrase in phrases:
+                    analysis['key_phrases'][phrase] += 1
                     
-                    # Определяем части речи
-                    pos_tags = pos_tag(tokens)
-                    
-                    # Извлекаем ключевые фразы
-                    phrases = []
-                    current_phrase = []
-                    
-                    for token, tag in pos_tags:
-                        # Ищем существительные, прилагательные, имена собственные
-                        if tag.startswith(('NN', 'JJ', 'NNP')) and token not in stop_words and len(token) > 2:
-                            current_phrase.append(token)
-                        else:
-                            if current_phrase:
-                                phrase = ' '.join(current_phrase)
-                                if 2 <= len(current_phrase) <= 3:
-                                    phrases.append(phrase)
-                                current_phrase = []
-                    
-                    # Добавляем последнюю фразу
-                    if current_phrase:
-                        phrase = ' '.join(current_phrase)
-                        if 2 <= len(current_phrase) <= 3:
-                            phrases.append(phrase)
-                    
-                    # Считаем частоту фраз
-                    for phrase in phrases:
-                        analysis['key_phrases'][phrase] += 1
-                        
-                except Exception:
-                    # Fallback: простой анализ по словам
+            except Exception:
+                # Fallback: простой анализ
+                for text in sample_texts:
                     words = text.lower().split()
                     for i in range(len(words) - 1):
                         if len(words[i]) > 3 and len(words[i+1]) > 3:
                             phrase = f"{words[i]} {words[i+1]}"
                             analysis['key_phrases'][phrase] += 1
-            else:
-                # Простой анализ без NLTK
+        else:
+            # Простой анализ без NLTK
+            for text in sample_texts:
                 words = text.lower().split()
                 for i in range(len(words) - 1):
                     if len(words[i]) > 3 and len(words[i+1]) > 3:
@@ -828,16 +836,22 @@ def main():
         analysis['ios_rating'] = sum(ios_ratings)/len(ios_ratings) if ios_ratings else 0
         
         if client.api_key:
-            reviews_text = "\n".join([r[1] for r in filtered_reviews[:2000]])
+            # Ограничиваем количество отзывов для AI анализа (производительность)
+            max_reviews_for_ai = min(500, len(filtered_reviews))
+            reviews_text = "\n".join([r[1] for r in filtered_reviews[:max_reviews_for_ai]])
             analysis['ai_analysis'] = analyze_with_ai(reviews_text)
         
         return analysis
 
     def analyze_key_themes(texts: list) -> dict:
-        """Анализирует ключевые темы с контекстом и группировкой"""
+        """Анализирует ключевые темы с контекстом и группировкой (оптимизированная версия)"""
         try:
+            # Ограничиваем количество текстов для анализа (производительность)
+            max_texts = min(200, len(texts))
+            sample_texts = texts[:max_texts]
+            
             # Собираем все тексты
-            all_text = " ".join(texts).lower()
+            all_text = " ".join(sample_texts).lower()
             
             # Определяем основные тематические категории
             theme_categories = {
@@ -879,21 +893,25 @@ def main():
                         count = all_text.count(keyword)
                         score += count
                         
-                        # Ищем контекст (предложение с ключевым словом)
-                        for text in texts:
-                            sentences = text.split('.')
-                            for sentence in sentences:
-                                if keyword in sentence.lower():
-                                    # Очищаем и обрезаем предложение
-                                    clean_sentence = sentence.strip()
-                                    if len(clean_sentence) > 10 and len(clean_sentence) < 200:
-                                        examples.append(clean_sentence)
+                        # Ищем контекст (оптимизированный поиск)
+                        if len(examples) < 3:  # Ограничиваем количество примеров
+                            for text in sample_texts:
+                                if keyword in text.lower():
+                                    # Разбиваем на предложения и ищем первое подходящее
+                                    sentences = text.split('.')
+                                    for sentence in sentences:
+                                        if keyword in sentence.lower():
+                                            clean_sentence = sentence.strip()
+                                            if 10 < len(clean_sentence) < 200:
+                                                examples.append(clean_sentence)
+                                                break
+                                    if len(examples) >= 3:  # Прерываем поиск
                                         break
                 
                 if score > 0:
                     theme_scores[theme_name] = {
                         'score': score,
-                        'examples': examples[:3]  # Максимум 3 примера
+                        'examples': examples[:3]
                     }
             
             # Сортируем по убыванию score
@@ -919,9 +937,11 @@ def main():
             # Анализируем ключевые темы с контекстом
             st.subheader("🎯 Ключевые темы")
             
-            # Получаем тексты отзывов для анализа тем
-            review_texts = [r[1] for r in filtered_reviews]
-            key_themes = analyze_key_themes(review_texts)
+            # Показываем прогресс анализа
+            with st.spinner("🔍 Анализируем ключевые темы..."):
+                # Получаем тексты отзывов для анализа тем
+                review_texts = [r[1] for r in filtered_reviews]
+                key_themes = analyze_key_themes(review_texts)
             
             if key_themes:
                 # Показываем тематические категории
