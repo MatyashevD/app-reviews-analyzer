@@ -723,10 +723,10 @@ def main():
                 else:
                     st.warning("Не удалось получить данные из App Store")
                     return []
-                    
-            except Exception as e:
-                st.warning(f"App Store временно недоступен: {str(e)}")
-                return []
+                        
+                except Exception as e:
+                    st.warning(f"App Store временно недоступен: {str(e)}")
+                    return []
     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
