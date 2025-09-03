@@ -644,22 +644,22 @@ def main():
                                                         review_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
                                             
                                             # Фильтруем по дате
-                        if start_date <= review_date <= end_date:
+                                            if start_date <= review_date <= end_date:
                                                 all_reviews.append((
                                                     datetime.datetime.combine(review_date, datetime.time.min),
                                                     entry.get('content', {}).get('label', ''),
-                                'App Store',
+                                                    'App Store',
                                                     int(entry.get('im:rating', {}).get('label', 0))
-                            ))
+                                                ))
                                                 if debug_mode:
                                                     st.info(f"✅ Отзыв добавлен: {review_date}")
                                             else:
                                                 if debug_mode:
                                                     st.info(f"❌ Отзыв вне диапазона: {review_date}")
-                    except Exception as e:
+                                        except Exception as e:
                                             if debug_mode:
                                                 st.info(f"⚠️ Ошибка парсинга записи {i}: {str(e)}")
-                        continue
+                                            continue
                             
                             if debug_mode:
                                 st.info(f"🎯 Итого отзывов в диапазоне: {len(all_reviews)}")
@@ -717,16 +717,16 @@ def main():
                             if debug_mode:
                                 st.warning(f"❌ RSS недоступен, статус: {reviews_response.status_code}")
                             return []
-                        else:
-                            st.warning("Приложение не найдено в App Store")
-                            return []
                     else:
-                        st.warning("Не удалось получить данные из App Store")
+                        st.warning("Приложение не найдено в App Store")
                         return []
-                        
-                except Exception as e:
-                    st.warning(f"App Store временно недоступен: {str(e)}")
+                else:
+                    st.warning("Не удалось получить данные из App Store")
                     return []
+                        
+            except Exception as e:
+                st.warning(f"App Store временно недоступен: {str(e)}")
+                return []
     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
@@ -923,27 +923,27 @@ def main():
                 pos_tags = pos_tag(tokens)
                 
                 # Извлекаем ключевые фразы
-            phrases = []
-            current_phrase = []
-            
+                phrases = []
+                current_phrase = []
+                
                 for token, tag in pos_tags:
                     if tag.startswith(('NN', 'JJ', 'NNP')) and token not in stop_words and len(token) > 2:
                         current_phrase.append(token)
-                else:
-                    if current_phrase:
+                    else:
+                        if current_phrase:
                             phrase = ' '.join(current_phrase)
                             if 2 <= len(current_phrase) <= 3:
                                 phrases.append(phrase)
                         current_phrase = []
             
                 # Добавляем последнюю фразу
-            if current_phrase:
+                if current_phrase:
                     phrase = ' '.join(current_phrase)
                     if 2 <= len(current_phrase) <= 3:
                         phrases.append(phrase)
-            
+                
                 # Считаем частоту фраз
-            for phrase in phrases:
+                for phrase in phrases:
                     analysis['key_phrases'][phrase] += 1
                     
             except Exception:
