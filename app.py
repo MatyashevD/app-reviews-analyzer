@@ -238,16 +238,16 @@ def main():
                     
                     # Формируем запись - убираем фильтр по score > 0
                     score = r.get("score", 0) or 0
-                        apps.append({
-                            "id": r["appId"],
-                            "title": r["title"],
-                            "developer": r.get("developer"),
-                            "score": score,
-                            "release_date": rel_date,
-                            "platform": "Google Play",
+                    apps.append({
+                        "id": r["appId"],
+                        "title": r["title"],
+                        "developer": r.get("developer"),
+                        "score": score,
+                        "release_date": rel_date,
+                        "platform": "Google Play",
                         "match_score": combined_score,
-                            "icon": r.get("icon")
-                        })
+                        "icon": r.get("icon")
+                    })
                 except Exception as e:
                     continue
         
@@ -430,7 +430,7 @@ def main():
                     max_cards = min(len(high_quality), 5)
                     cols = st.columns(max_cards)
                     for idx, app in enumerate(high_quality[:max_cards]):
-                    with cols[idx]:
+                        with cols[idx]:
                             render_app_card(app, platform_key, color, bg_color, is_high_quality=True)
                 
                 # Убираем показ среднего качества - оставляем только лучшие
@@ -445,8 +445,8 @@ def main():
 
         def render_app_card(app, platform_key, color, bg_color, is_high_quality=False):
             """Отображает карточку приложения с улучшенным дизайном"""
-                        selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
-                        is_selected = selected_app.get('id') == app['id']
+            selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
+            is_selected = selected_app.get('id') == app['id']
             
             # Определяем цвет релевантности
             if is_high_quality:
@@ -458,12 +458,12 @@ def main():
             
             # Форматируем рейтинг
             rating_display = f"★ {app['score']:.1f}" if app['score'] > 0 else "Нет рейтинга"
-                        
-                        st.markdown(f"""
+            
+            st.markdown(f"""
             <div class="card-container">
                 <div class="app-card" style="border: {border_style}; margin-bottom: 0;">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
                         <div style="flex: 1;">
                             <div style="font-weight: 600; font-size: 14px; color: #2e2e2e; margin-bottom: 4px;">
                                 {app['title']}
@@ -474,7 +474,7 @@ def main():
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div style="color: {color}; font-weight: 500;">
                                     {rating_display}
-                            </div>
+                                </div>
                                 <div style="
                                     background: {relevance_color}; 
                                     color: white; 
@@ -499,37 +499,37 @@ def main():
                     ">
                         {platform_key.upper()}
                     </div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
             # Кнопка на всю ширину карточки
-                        if st.button(
-                            "✓ Выбрано" if is_selected else "Выбрать",
-                            key=f"{platform_key}_{app['id']}",
+            if st.button(
+                "✓ Выбрано" if is_selected else "Выбрать",
+                key=f"{platform_key}_{app['id']}",
                 use_container_width=True,  # Кнопка растягивается на всю ширину
                 type="primary" if is_selected else "secondary"
-                        ):
-                            if platform_key == "gp":
-                                new_selection = app if not is_selected else None
-                                st.session_state.selected_gp_app = new_selection
-                                if new_selection and new_selection.get('release_date'):
-                                    st.session_state.gp_release_dates = [{
-                                        'date': new_selection['release_date'],
-                                        'platform': 'Google Play'
-                                    }]
-                                else:
-                                    st.session_state.gp_release_dates = []
-                                    
-                            elif platform_key == "ios":
-                                new_selection = app if not is_selected else None
-                                st.session_state.selected_ios_app = new_selection
-                                if new_selection and new_selection.get('release_date'):
-                                    st.session_state.ios_release_dates = [{
-                                        'date': new_selection['release_date'],
-                                        'platform': 'App Store'
-                                    }]
-                            st.rerun()
+            ):
+                if platform_key == "gp":
+                    new_selection = app if not is_selected else None
+                    st.session_state.selected_gp_app = new_selection
+                    if new_selection and new_selection.get('release_date'):
+                        st.session_state.gp_release_dates = [{
+                            'date': new_selection['release_date'],
+                            'platform': 'Google Play'
+                        }]
+                    else:
+                        st.session_state.gp_release_dates = []
+                        
+                elif platform_key == "ios":
+                    new_selection = app if not is_selected else None
+                    st.session_state.selected_ios_app = new_selection
+                    if new_selection and new_selection.get('release_date'):
+                        st.session_state.ios_release_dates = [{
+                            'date': new_selection['release_date'],
+                            'platform': 'App Store'
+                        }]
+                st.rerun()
 
         render_platform(" App Store", results["app_store"], "ios", "#399eff", "#cce2ff")
         render_platform("📲 Google Play", results["google_play"], "gp", "#36c55f", "#e3ffeb")
@@ -651,53 +651,53 @@ def main():
                                 'App Store',
                                                     int(entry.get('im:rating', {}).get('label', 0))
                             ))
-                                                if debug_mode:
-                                                    st.info(f"✅ Отзыв добавлен: {review_date}")
-                                            else:
-                                                if debug_mode:
-                                                    st.info(f"❌ Отзыв вне диапазона: {review_date}")
-                    except Exception as e:
                                             if debug_mode:
-                                                st.info(f"⚠️ Ошибка парсинга записи {i}: {str(e)}")
-                        continue
-                                
+                                                st.info(f"✅ Отзыв добавлен: {review_date}")
+                                        else:
+                                            if debug_mode:
+                                                st.info(f"❌ Отзыв вне диапазона: {review_date}")
+                                    except Exception as e:
+                                        if debug_mode:
+                                            st.info(f"⚠️ Ошибка парсинга записи {i}: {str(e)}")
+                                        continue
+                            
+                            if debug_mode:
+                                st.info(f"🎯 Итого отзывов в диапазоне: {len(all_reviews)}")
+                            
+                            # Если нет отзывов, пробуем альтернативный метод
+                            if not all_reviews:
                                 if debug_mode:
-                                    st.info(f"🎯 Итого отзывов в диапазоне: {len(all_reviews)}")
-                                
-                                # Если нет отзывов, пробуем альтернативный метод
-                                if not all_reviews:
-                                    if debug_mode:
-                                        st.info("🔄 Пробуем альтернативный метод...")
-                                    try:
-                                        alt_url = f"https://itunes.apple.com/ru/rss/customerreviews/id={app_store_id}/json"
-                                        alt_response = requests.get(alt_url, headers={"User-Agent": "Mozilla/5.0"})
-                                        
-                                        if alt_response.status_code == 200:
-                                            alt_data = alt_response.json()
-                                            if 'feed' in alt_data and 'entry' in alt_data['feed']:
-                                                alt_entries = alt_data['feed']['entry']
-                                                if debug_mode:
-                                                    st.info(f"📝 Альтернативный метод: {len(alt_entries)} записей")
-                                                
-                                                for entry in alt_entries[1:]:
+                                    st.info("🔄 Пробуем альтернативный метод...")
+                                try:
+                                    alt_url = f"https://itunes.apple.com/ru/rss/customerreviews/id={app_store_id}/json"
+                                    alt_response = requests.get(alt_url, headers={"User-Agent": "Mozilla/5.0"})
+                                    
+                                    if alt_response.status_code == 200:
+                                        alt_data = alt_response.json()
+                                        if 'feed' in alt_data and 'entry' in alt_data['feed']:
+                                            alt_entries = alt_data['feed']['entry']
+                                            if debug_mode:
+                                                st.info(f"📝 Альтернативный метод: {len(alt_entries)} записей")
+                                            
+                                            for entry in alt_entries[1:]:
+                                                try:
+                                                    date_str = entry.get('updated', {}).get('label', '')
+                                                    
+                                                    # Пробуем разные форматы даты
                                                     try:
-                                                        date_str = entry.get('updated', {}).get('label', '')
-                                                        
-                                                        # Пробуем разные форматы даты
+                                                        # Формат 1: UTC (Z)
+                                                        review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').date()
+                                                    except ValueError:
                                                         try:
-                                                            # Формат 1: UTC (Z)
-                                                            review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ').date()
+                                                            # Формат 2: С часовым поясом (-07:00)
+                                                            review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S%z').date()
                                                         except ValueError:
                                                             try:
-                                                                # Формат 2: С часовым поясом (-07:00)
-                                                                review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S%z').date()
+                                                                # Формат 3: Без секунд
+                                                                review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M%z').date()
                                                             except ValueError:
-                                                                try:
-                                                                    # Формат 3: Без секунд
-                                                                    review_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M%z').date()
-                                                                except ValueError:
-                                                                    # Формат 4: Только дата
-                                                                    review_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+                                                                # Формат 4: Только дата
+                                                                review_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
                                                         
                                                         if start_date <= review_date <= end_date:
                                                             all_reviews.append((
@@ -706,27 +706,27 @@ def main():
                                                                 'App Store',
                                                                 int(entry.get('im:rating', {}).get('label', 0))
                                                             ))
-                                                    except Exception:
-                                                        continue
-                                    except Exception as e:
-                                        if debug_mode:
-                                            st.info(f"⚠️ Альтернативный метод недоступен: {str(e)}")
-                                
-                                return all_reviews
-                            else:
-                                if debug_mode:
-                                    st.warning(f"❌ RSS недоступен, статус: {reviews_response.status_code}")
-                                return []
+                                                except Exception:
+                                                    continue
+                                except Exception as e:
+                                    if debug_mode:
+                                        st.info(f"⚠️ Альтернативный метод недоступен: {str(e)}")
+                            
+                            return all_reviews
                         else:
-                            st.warning("Приложение не найдено в App Store")
+                            if debug_mode:
+                                st.warning(f"❌ RSS недоступен, статус: {reviews_response.status_code}")
                             return []
                     else:
-                        st.warning("Не удалось получить данные из App Store")
+                        st.warning("Приложение не найдено в App Store")
                         return []
-                    
-                except Exception as e:
-                    st.warning(f"App Store временно недоступен: {str(e)}")
+                else:
+                    st.warning("Не удалось получить данные из App Store")
                     return []
+                    
+            except Exception as e:
+                st.warning(f"App Store временно недоступен: {str(e)}")
+                return []
     
         except Exception as e:
             st.error(f"Ошибка получения отзывов: {str(e)}")
@@ -923,27 +923,27 @@ def main():
                 pos_tags = pos_tag(tokens)
                 
                 # Извлекаем ключевые фразы
-            phrases = []
-            current_phrase = []
-            
+                phrases = []
+                current_phrase = []
+                
                 for token, tag in pos_tags:
                     if tag.startswith(('NN', 'JJ', 'NNP')) and token not in stop_words and len(token) > 2:
                         current_phrase.append(token)
-                else:
-                    if current_phrase:
+                    else:
+                        if current_phrase:
                             phrase = ' '.join(current_phrase)
                             if 2 <= len(current_phrase) <= 3:
                                 phrases.append(phrase)
                         current_phrase = []
             
                 # Добавляем последнюю фразу
-            if current_phrase:
+                if current_phrase:
                     phrase = ' '.join(current_phrase)
                     if 2 <= len(current_phrase) <= 3:
                         phrases.append(phrase)
-            
+                
                 # Считаем частоту фраз
-            for phrase in phrases:
+                for phrase in phrases:
                     analysis['key_phrases'][phrase] += 1
                     
             except Exception:
