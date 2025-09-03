@@ -430,7 +430,7 @@ def main():
                     max_cards = min(len(high_quality), 5)
                     cols = st.columns(max_cards)
                     for idx, app in enumerate(high_quality[:max_cards]):
-                    with cols[idx]:
+                        with cols[idx]:
                             render_app_card(app, platform_key, color, bg_color, is_high_quality=True)
                 
                 # Убираем показ среднего качества - оставляем только лучшие
