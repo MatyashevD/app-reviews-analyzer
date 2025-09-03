@@ -720,9 +720,6 @@ def main():
                     else:
                         st.warning("Приложение не найдено в App Store")
                         return []
-                else:
-                    st.warning("Не удалось получить данные из App Store")
-                    return []
                         
             except Exception as e:
                 st.warning(f"App Store временно недоступен: {str(e)}")
