@@ -992,7 +992,7 @@ def main():
             except Exception as e:
                 # Fallback к оригинальному анализу
                 reviews_text = "\n".join(reviews_texts)
-            analysis['ai_analysis'] = analyze_with_ai(reviews_text)
+                analysis['ai_analysis'] = analyze_with_ai(reviews_text)
         
         return analysis
 
