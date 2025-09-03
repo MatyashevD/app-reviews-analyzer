@@ -238,16 +238,16 @@ def main():
                     
                     # Формируем запись - убираем фильтр по score > 0
                     score = r.get("score", 0) or 0
-                        apps.append({
-                            "id": r["appId"],
-                            "title": r["title"],
-                            "developer": r.get("developer"),
-                            "score": score,
-                            "release_date": rel_date,
-                            "platform": "Google Play",
+                    apps.append({
+                        "id": r["appId"],
+                        "title": r["title"],
+                        "developer": r.get("developer"),
+                        "score": score,
+                        "release_date": rel_date,
+                        "platform": "Google Play",
                         "match_score": combined_score,
-                            "icon": r.get("icon")
-                        })
+                        "icon": r.get("icon")
+                    })
                 except Exception as e:
                     continue
         
