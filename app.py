@@ -644,22 +644,22 @@ def main():
                                                         review_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
                                             
                                             # Фильтруем по дате
-                        if start_date <= review_date <= end_date:
+                                            if start_date <= review_date <= end_date:
                                                 all_reviews.append((
                                                     datetime.datetime.combine(review_date, datetime.time.min),
                                                     entry.get('content', {}).get('label', ''),
-                                'App Store',
+                                                    'App Store',
                                                     int(entry.get('im:rating', {}).get('label', 0))
-                            ))
+                                                ))
+                                                if debug_mode:
+                                                    st.info(f"✅ Отзыв добавлен: {review_date}")
+                                            else:
+                                                if debug_mode:
+                                                    st.info(f"❌ Отзыв вне диапазона: {review_date}")
+                                        except Exception as e:
                                             if debug_mode:
-                                                st.info(f"✅ Отзыв добавлен: {review_date}")
-                                        else:
-                                            if debug_mode:
-                                                st.info(f"❌ Отзыв вне диапазона: {review_date}")
-                                    except Exception as e:
-                                        if debug_mode:
-                                            st.info(f"⚠️ Ошибка парсинга записи {i}: {str(e)}")
-                                        continue
+                                                st.info(f"⚠️ Ошибка парсинга записи {i}: {str(e)}")
+                                            continue
                             
                             if debug_mode:
                                 st.info(f"🎯 Итого отзывов в диапазоне: {len(all_reviews)}")
