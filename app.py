@@ -740,9 +740,21 @@ def main():
             
             # Анализируем каждую группу отдельно
             category_analyses = {}
+            total_categories = len([cat for cat, reviews in grouped_reviews.items() if len(reviews) >= 3])
+            current_category = 0
             
             for category, category_reviews in grouped_reviews.items():
                 if len(category_reviews) >= 3:  # Анализируем только группы с достаточным количеством отзывов
+                    current_category += 1
+                    
+                    # Обновляем прогресс (если контейнеры доступны)
+                    try:
+                        progress = int((current_category / total_categories) * 100)
+                        # Попытка обновить прогресс, если контейнеры доступны
+                        pass  # Прогресс будет обновлен в основной функции
+                    except:
+                        pass
+                    
                     # Ограничиваем количество отзывов для каждой группы
                     max_reviews_per_group = min(100, len(category_reviews))
                     sample_reviews = category_reviews[:max_reviews_per_group]
@@ -956,15 +968,80 @@ def main():
             max_reviews_for_ai = min(500, len(filtered_reviews))
             reviews_texts = [r[1] for r in filtered_reviews[:max_reviews_for_ai]]
             
-            # Используем новый контекстный анализ
+            # Используем новый контекстный анализ с индикатором прогресса
             try:
+                # Показываем прогресс AI анализа
+                progress_container = st.empty()
+                status_container = st.empty()
+                
+                progress_container.progress(0)
+                status_container.text("🤖 Запуск AI анализа...")
+                
                 analysis['ai_analysis'] = analyze_with_ai_contextual(reviews_texts)
+                
+                # Обновляем прогресс
+                progress_container.progress(100)
+                status_container.text("✅ AI анализ завершен!")
+                
+                # Убираем индикаторы через 2 секунды
+                import time
+                time.sleep(2)
+                progress_container.empty()
+                status_container.empty()
+                
             except Exception as e:
                 # Fallback к оригинальному анализу
                 reviews_text = "\n".join(reviews_texts)
                 analysis['ai_analysis'] = analyze_with_ai(reviews_text)
         
         return analysis
+
+    def parse_ai_analysis_for_ui(ai_analysis: str) -> dict:
+        """Парсит AI анализ для отображения в раскрывающихся блоках"""
+        try:
+            if not ai_analysis or "## 🔍 Анализ по категориям проблем" not in ai_analysis:
+                return {"📝 Общий анализ": ai_analysis}
+            
+            # Разбиваем анализ на категории
+            sections = ai_analysis.split("### ")
+            parsed_sections = {}
+            
+            for section in sections[1:]:  # Пропускаем первый элемент (заголовок)
+                if section.strip():
+                    lines = section.strip().split('\n')
+                    category_name = lines[0].strip()
+                    
+                    # Извлекаем статистику из содержимого
+                    content = '\n'.join(lines[1:])
+                    
+                    # Подсчитываем количество проблем
+                    problem_count = content.count('**Проблема') + content.count('- **Проблема')
+                    
+                    # Подсчитываем количество отзывов (ищем паттерн "Количество отзывов")
+                    import re
+                    review_match = re.search(r'Количество отзывов.*?(\d+)', content)
+                    review_count = review_match.group(1) if review_match else "?"
+                    
+                    # Создаем заголовок с статистикой
+                    if problem_count > 0 and review_count != "?":
+                        header = f"{category_name} ({problem_count} проблем, {review_count} отзывов)"
+                    elif problem_count > 0:
+                        header = f"{category_name} ({problem_count} проблем)"
+                    else:
+                        header = category_name
+                    
+                    parsed_sections[header] = content
+            
+            # Добавляем общие выводы если есть
+            if "## 📈 Общие выводы и рекомендации" in ai_analysis:
+                general_section = ai_analysis.split("## 📈 Общие выводы и рекомендации")[1]
+                parsed_sections["📈 Общие выводы и рекомендации"] = general_section.strip()
+            
+            return parsed_sections
+            
+        except Exception as e:
+            # Fallback: возвращаем весь анализ как есть
+            return {"📝 AI Анализ": ai_analysis}
 
     def group_reviews_by_context(reviews_texts: list) -> dict:
         """Группирует отзывы по контекстам для более точного AI анализа"""
@@ -1211,7 +1288,14 @@ def main():
             if analysis['ai_analysis']:
                 st.markdown("---")
                 st.subheader("🤖 AI Анализ")
-                st.markdown(analysis['ai_analysis'])
+                
+                # Парсим AI анализ для отображения в раскрывающихся блоках
+                parsed_analysis = parse_ai_analysis_for_ui(analysis['ai_analysis'])
+                
+                # Отображаем каждую категорию в отдельном expander'е
+                for category_header, category_content in parsed_analysis.items():
+                    with st.expander(category_header, expanded=False):
+                        st.markdown(category_content)
             else:
                 st.warning("AI-анализ недоступен. Проверьте API-ключ OpenAI")
         
