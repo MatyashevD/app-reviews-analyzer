@@ -445,8 +445,8 @@ def main():
 
         def render_app_card(app, platform_key, color, bg_color, is_high_quality=False):
             """Отображает карточку приложения с улучшенным дизайном"""
-                        selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
-                        is_selected = selected_app.get('id') == app['id']
+            selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
+            is_selected = selected_app.get('id') == app['id']
             
             # Определяем цвет релевантности
             if is_high_quality:
@@ -458,12 +458,12 @@ def main():
             
             # Форматируем рейтинг
             rating_display = f"★ {app['score']:.1f}" if app['score'] > 0 else "Нет рейтинга"
-                        
-                        st.markdown(f"""
+            
+            st.markdown(f"""
             <div class="card-container">
                 <div class="app-card" style="border: {border_style}; margin-bottom: 0;">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
                         <div style="flex: 1;">
                             <div style="font-weight: 600; font-size: 14px; color: #2e2e2e; margin-bottom: 4px;">
                                 {app['title']}
@@ -474,7 +474,7 @@ def main():
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div style="color: {color}; font-weight: 500;">
                                     {rating_display}
-                            </div>
+                                </div>
                                 <div style="
                                     background: {relevance_color}; 
                                     color: white; 
@@ -499,37 +499,37 @@ def main():
                     ">
                         {platform_key.upper()}
                     </div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
                         
             # Кнопка на всю ширину карточки
-                        if st.button(
-                            "✓ Выбрано" if is_selected else "Выбрать",
-                            key=f"{platform_key}_{app['id']}",
+            if st.button(
+                "✓ Выбрано" if is_selected else "Выбрать",
+                key=f"{platform_key}_{app['id']}",
                 use_container_width=True,  # Кнопка растягивается на всю ширину
                 type="primary" if is_selected else "secondary"
-                        ):
-                            if platform_key == "gp":
-                                new_selection = app if not is_selected else None
-                                st.session_state.selected_gp_app = new_selection
-                                if new_selection and new_selection.get('release_date'):
-                                    st.session_state.gp_release_dates = [{
-                                        'date': new_selection['release_date'],
-                                        'platform': 'Google Play'
-                                    }]
-                                else:
-                                    st.session_state.gp_release_dates = []
-                                    
-                            elif platform_key == "ios":
-                                new_selection = app if not is_selected else None
-                                st.session_state.selected_ios_app = new_selection
-                                if new_selection and new_selection.get('release_date'):
-                                    st.session_state.ios_release_dates = [{
-                                        'date': new_selection['release_date'],
-                                        'platform': 'App Store'
-                                    }]
-                            st.rerun()
+            ):
+                if platform_key == "gp":
+                    new_selection = app if not is_selected else None
+                    st.session_state.selected_gp_app = new_selection
+                    if new_selection and new_selection.get('release_date'):
+                        st.session_state.gp_release_dates = [{
+                            'date': new_selection['release_date'],
+                            'platform': 'Google Play'
+                        }]
+                    else:
+                        st.session_state.gp_release_dates = []
+                        
+                elif platform_key == "ios":
+                    new_selection = app if not is_selected else None
+                    st.session_state.selected_ios_app = new_selection
+                    if new_selection and new_selection.get('release_date'):
+                        st.session_state.ios_release_dates = [{
+                            'date': new_selection['release_date'],
+                            'platform': 'App Store'
+                        }]
+                st.rerun()
 
         render_platform(" App Store", results["app_store"], "ios", "#399eff", "#cce2ff")
         render_platform("📲 Google Play", results["google_play"], "gp", "#36c55f", "#e3ffeb")
