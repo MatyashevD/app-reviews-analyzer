@@ -720,9 +720,13 @@ def main():
                     else:
                         st.warning("Приложение не найдено в App Store")
                         return []
-    
+                        
+                except Exception as e:
+                    st.error(f"Ошибка получения отзывов: {str(e)}")
+                    return []
+                    
         except Exception as e:
-            st.error(f"Ошибка получения отзывов: {str(e)}")
+            st.error(f"Общая ошибка получения отзывов: {str(e)}")
             return []
 
     def analyze_with_ai_contextual(reviews_texts: list):
