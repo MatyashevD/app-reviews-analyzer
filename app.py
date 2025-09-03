@@ -29,7 +29,7 @@ def main():
         page_icon="📱",
         menu_items={'About': "### Анализ отзывов из Google Play и App Store"}
     )
-    
+
     # Стили для карточек приложений
     st.markdown("""
     <style>
@@ -73,7 +73,7 @@ def main():
     if "openai_api_key" not in st.secrets or not st.secrets["openai_api_key"]:
         st.error("❌ API-ключ OpenAI не найден. Проверьте настройки секретов.")
         st.stop()
-    
+
     client = OpenAI(api_key=st.secrets["openai_api_key"])
 
     # Инициализируем NLTK для анализа текста
@@ -238,16 +238,16 @@ def main():
                     
                     # Формируем запись - убираем фильтр по score > 0
                     score = r.get("score", 0) or 0
-                    apps.append({
-                        "id": r["appId"],
-                        "title": r["title"],
-                        "developer": r.get("developer"),
-                        "score": score,
-                        "release_date": rel_date,
-                        "platform": "Google Play",
+                        apps.append({
+                            "id": r["appId"],
+                            "title": r["title"],
+                            "developer": r.get("developer"),
+                            "score": score,
+                            "release_date": rel_date,
+                            "platform": "Google Play",
                         "match_score": combined_score,
-                        "icon": r.get("icon")
-                    })
+                            "icon": r.get("icon")
+                        })
                 except Exception as e:
                     continue
         
@@ -328,7 +328,7 @@ def main():
             ios_filtered.extend(ios_high_quality[:5])  # Увеличили с 3 до 5
             if not ios_high_quality:  # Только если нет высокого качества
                 ios_filtered.extend(ios_low_quality[:2])  # Увеличили с 1 до 2
-            
+
             results["app_store"] = sorted(
                 ios_filtered,
                 key=lambda x: (-x['match_score'], -x['score']),
@@ -430,7 +430,7 @@ def main():
                     max_cards = min(len(high_quality), 5)
                     cols = st.columns(max_cards)
                     for idx, app in enumerate(high_quality[:max_cards]):
-                        with cols[idx]:
+                    with cols[idx]:
                             render_app_card(app, platform_key, color, bg_color, is_high_quality=True)
                 
                 # Убираем показ среднего качества - оставляем только лучшие
@@ -445,8 +445,8 @@ def main():
 
         def render_app_card(app, platform_key, color, bg_color, is_high_quality=False):
             """Отображает карточку приложения с улучшенным дизайном"""
-            selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
-            is_selected = selected_app.get('id') == app['id']
+                        selected_app = st.session_state.get(f"selected_{platform_key}_app") or {}
+                        is_selected = selected_app.get('id') == app['id']
             
             # Определяем цвет релевантности
             if is_high_quality:
@@ -458,23 +458,23 @@ def main():
             
             # Форматируем рейтинг
             rating_display = f"★ {app['score']:.1f}" if app['score'] > 0 else "Нет рейтинга"
-            
-            st.markdown(f"""
+                        
+                        st.markdown(f"""
             <div class="card-container">
                 <div class="app-card" style="border: {border_style}; margin-bottom: 0;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                        <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <img src="{app.get('icon', 'https://via.placeholder.com/50')}">
                         <div style="flex: 1;">
                             <div style="font-weight: 600; font-size: 14px; color: #2e2e2e; margin-bottom: 4px;">
                                 {app['title']}
-                            </div>
+                                </div>
                             <div style="font-size: 12px; color: #a8a8a8; margin-bottom: 6px;">
                                 {app['developer']}
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div style="color: {color}; font-weight: 500;">
                                     {rating_display}
-                                </div>
+                            </div>
                                 <div style="
                                     background: {relevance_color}; 
                                     color: white; 
@@ -499,37 +499,37 @@ def main():
                     ">
                         {platform_key.upper()}
                     </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
             # Кнопка на всю ширину карточки
-            if st.button(
-                "✓ Выбрано" if is_selected else "Выбрать",
-                key=f"{platform_key}_{app['id']}",
+                        if st.button(
+                            "✓ Выбрано" if is_selected else "Выбрать",
+                            key=f"{platform_key}_{app['id']}",
                 use_container_width=True,  # Кнопка растягивается на всю ширину
                 type="primary" if is_selected else "secondary"
-            ):
-                    if platform_key == "gp":
-                        new_selection = app if not is_selected else None
-                        st.session_state.selected_gp_app = new_selection
-                        if new_selection and new_selection.get('release_date'):
-                            st.session_state.gp_release_dates = [{
-                                'date': new_selection['release_date'],
-                                'platform': 'Google Play'
-                            }]
-                        else:
-                            st.session_state.gp_release_dates = []
-                            
-                    elif platform_key == "ios":
-                        new_selection = app if not is_selected else None
-                        st.session_state.selected_ios_app = new_selection
-                        if new_selection and new_selection.get('release_date'):
-                            st.session_state.ios_release_dates = [{
-                                'date': new_selection['release_date'],
-                                'platform': 'App Store'
-                            }]
-                    st.rerun()
+                        ):
+                            if platform_key == "gp":
+                                new_selection = app if not is_selected else None
+                                st.session_state.selected_gp_app = new_selection
+                                if new_selection and new_selection.get('release_date'):
+                                    st.session_state.gp_release_dates = [{
+                                        'date': new_selection['release_date'],
+                                        'platform': 'Google Play'
+                                    }]
+                                else:
+                                    st.session_state.gp_release_dates = []
+                                    
+                            elif platform_key == "ios":
+                                new_selection = app if not is_selected else None
+                                st.session_state.selected_ios_app = new_selection
+                                if new_selection and new_selection.get('release_date'):
+                                    st.session_state.ios_release_dates = [{
+                                        'date': new_selection['release_date'],
+                                        'platform': 'App Store'
+                                    }]
+                            st.rerun()
 
         render_platform(" App Store", results["app_store"], "ios", "#399eff", "#cce2ff")
         render_platform("📲 Google Play", results["google_play"], "gp", "#36c55f", "#e3ffeb")
@@ -582,8 +582,8 @@ def main():
                 selected_app = st.session_state.get('selected_ios_app')
                 if not selected_app or not selected_app.get('app_store_id'):
                     st.error("Не выбрано приложение из App Store")
-                    return []
-                
+                    return []                
+
                 app_store_id = selected_app['app_store_id']
                 
                 try:
@@ -644,22 +644,22 @@ def main():
                                                         review_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
                                             
                                             # Фильтруем по дате
-                                            if start_date <= review_date <= end_date:
+                        if start_date <= review_date <= end_date:
                                                 all_reviews.append((
                                                     datetime.datetime.combine(review_date, datetime.time.min),
                                                     entry.get('content', {}).get('label', ''),
-                                                    'App Store',
+                                'App Store',
                                                     int(entry.get('im:rating', {}).get('label', 0))
-                                                ))
+                            ))
                                                 if debug_mode:
                                                     st.info(f"✅ Отзыв добавлен: {review_date}")
                                             else:
                                                 if debug_mode:
                                                     st.info(f"❌ Отзыв вне диапазона: {review_date}")
-                                        except Exception as e:
+                    except Exception as e:
                                             if debug_mode:
                                                 st.info(f"⚠️ Ошибка парсинга записи {i}: {str(e)}")
-                                            continue
+                        continue
                                 
                                 if debug_mode:
                                     st.info(f"🎯 Итого отзывов в диапазоне: {len(all_reviews)}")
@@ -761,17 +761,35 @@ def main():
                     
                     category_text = "\n".join(sample_reviews)
                     
-                    # Специализированный промпт для каждой категории
+                    # Специализированные промпты для каждой категории
                     category_prompts = {
-                        "💳 Платежи и финансы": "фокусируйся на проблемах с оплатой, привязкой карт, тарифами",
-                        "🗺️ Навигация и геолокация": "фокусируйся на проблемах с картами, адресами, маршрутами",
-                        "📱 Приложение и интерфейс": "фокусируйся на технических проблемах, багах, интерфейсе",
-                        "🚗 Транспорт и логистика": "фокусируйся на проблемах с водителями, поездками, логистикой",
-                        "👥 Сервис и поддержка": "фокусируйся на качестве обслуживания, поддержке клиентов",
-                        "⏰ Время и скорость": "фокусируйся на проблемах со временем, скоростью, задержками"
+                        "💳 Платежи и финансы": {
+                            "focus": "проблемы с оплатой, привязкой банковских карт, тарифами, списаниями",
+                            "context": "различай банковские карты от карт навигации"
+                        },
+                        "🗺️ Навигация и геолокация": {
+                            "focus": "проблемы с картами навигации, адресами, маршрутами, геолокацией",
+                            "context": "фокусируйся на навигационных картах, не банковских"
+                        },
+                        "📱 Приложение и интерфейс": {
+                            "focus": "технические проблемы, баги, интерфейс, функции приложения",
+                            "context": "конкретные технические проблемы и их решения"
+                        },
+                        "🚗 Транспорт и логистика": {
+                            "focus": "проблемы с водителями, поездками, логистикой, заказами",
+                            "context": "операционные проблемы сервиса"
+                        },
+                        "👥 Сервис и поддержка": {
+                            "focus": "качество обслуживания, поддержка клиентов, отношение персонала",
+                            "context": "человеческий фактор в обслуживании"
+                        },
+                        "⏰ Время и скорость": {
+                            "focus": "проблемы со временем, скоростью, задержками, ожиданием",
+                            "context": "временные аспекты сервиса"
+                        }
                     }
                     
-                    focus_instruction = category_prompts.get(category, "анализируй общие проблемы")
+                    prompt_data = category_prompts.get(category, {"focus": "общие проблемы", "context": ""})
                     
                     response = client.chat.completions.create(
                         model="gpt-4-1106-preview",
@@ -779,58 +797,43 @@ def main():
                             "role": "system",
                             "content": f"""Ты - эксперт по анализу отзывов пользователей. Проанализируй отзывы в категории "{category}".
 
-ВАЖНО: {focus_instruction}. Различай контексты - например, "карта" может означать банковскую карту (платежи) или карту навигации (геолокация).
+ФОКУС: {prompt_data['focus']}
+КОНТЕКСТ: {prompt_data['context']}
 
-Формат анализа:
-## 🔍 Основные проблемы в категории
-- **Проблема 1**: Описание с контекстом
-- **Проблема 2**: Описание с контекстом
-- **Проблема 3**: Описание с контекстом
+Формат анализа (только конкретная информация):
 
-## 📊 Статистика по категории
+## 🔍 Основные проблемы
+- **Проблема 1**: Конкретное описание с примерами из отзывов
+- **Проблема 2**: Конкретное описание с примерами из отзывов  
+- **Проблема 3**: Конкретное описание с примерами из отзывов
+
+## 📊 Статистика
 - **Количество отзывов**: {len(sample_reviews)}
-- **Тональность**: процент положительных/отрицательных
-- **Критичность**: насколько серьезны проблемы
+- **Тональность**: конкретные проценты положительных/отрицательных
+- **Критичность**: насколько серьезны проблемы (высокая/средняя/низкая)
 
-## 💡 Рекомендации
-- **Приоритетные исправления**
-- **Долгосрочные улучшения**
+## 💡 Конкретные рекомендации
+- **Что исправить в первую очередь** (конкретные действия)
+- **Как улучшить** (конкретные шаги)
 
-Используй маркдаун, будь конкретным и учитывай контекст."""
+Будь максимально конкретным, избегай общих фраз. Используй маркдаун."""
                         }, {
                             "role": "user",
                             "content": f"Отзывы в категории '{category}':\n\n{category_text[:4000]}"
                         }],
-                        temperature=0.2,
-                        max_tokens=1200
+                        temperature=0.1,
+                        max_tokens=1000
                     )
                     
                     if response.choices:
                         category_analyses[category] = response.choices[0].message.content
             
-            # Объединяем результаты в общий анализ
+            # Объединяем результаты в общий анализ (только полезные категории)
             if category_analyses:
-                combined_analysis = "## 🔍 Анализ по категориям проблем\n\n"
+                combined_analysis = ""
                 
                 for category, analysis in category_analyses.items():
                     combined_analysis += f"### {category}\n{analysis}\n\n"
-                
-                # Добавляем общие выводы
-                combined_analysis += """## 📈 Общие выводы и рекомендации
-
-### 🎯 Приоритетные направления для улучшения
-- Основываясь на анализе по категориям выше
-- Сфокусируйтесь на наиболее критичных проблемах
-- Учитывайте влияние на пользовательский опыт
-
-### 📊 Сравнение платформ
-- Google Play vs App Store: различия в проблемах
-- Общие тренды и специфические особенности
-
-### 💡 Стратегические рекомендации
-- Краткосрочные решения (1-3 месяца)
-- Долгосрочные улучшения (6-12 месяцев)
-- Мониторинг и метрики для отслеживания прогресса"""
                 
                 return combined_analysis
             else:
@@ -920,27 +923,27 @@ def main():
                 pos_tags = pos_tag(tokens)
                 
                 # Извлекаем ключевые фразы
-                phrases = []
-                current_phrase = []
-                
+            phrases = []
+            current_phrase = []
+            
                 for token, tag in pos_tags:
                     if tag.startswith(('NN', 'JJ', 'NNP')) and token not in stop_words and len(token) > 2:
                         current_phrase.append(token)
-                    else:
-                        if current_phrase:
+                else:
+                    if current_phrase:
                             phrase = ' '.join(current_phrase)
                             if 2 <= len(current_phrase) <= 3:
                                 phrases.append(phrase)
-                            current_phrase = []
-                
+                        current_phrase = []
+            
                 # Добавляем последнюю фразу
-                if current_phrase:
+            if current_phrase:
                     phrase = ' '.join(current_phrase)
                     if 2 <= len(current_phrase) <= 3:
                         phrases.append(phrase)
-                
+            
                 # Считаем частоту фраз
-                for phrase in phrases:
+            for phrase in phrases:
                     analysis['key_phrases'][phrase] += 1
                     
             except Exception:
@@ -992,56 +995,11 @@ def main():
             except Exception as e:
                 # Fallback к оригинальному анализу
                 reviews_text = "\n".join(reviews_texts)
-                analysis['ai_analysis'] = analyze_with_ai(reviews_text)
+            analysis['ai_analysis'] = analyze_with_ai(reviews_text)
         
         return analysis
 
-    def parse_ai_analysis_for_ui(ai_analysis: str) -> dict:
-        """Парсит AI анализ для отображения в раскрывающихся блоках"""
-        try:
-            if not ai_analysis or "## 🔍 Анализ по категориям проблем" not in ai_analysis:
-                return {"📝 Общий анализ": ai_analysis}
-            
-            # Разбиваем анализ на категории
-            sections = ai_analysis.split("### ")
-            parsed_sections = {}
-            
-            for section in sections[1:]:  # Пропускаем первый элемент (заголовок)
-                if section.strip():
-                    lines = section.strip().split('\n')
-                    category_name = lines[0].strip()
-                    
-                    # Извлекаем статистику из содержимого
-                    content = '\n'.join(lines[1:])
-                    
-                    # Подсчитываем количество проблем
-                    problem_count = content.count('**Проблема') + content.count('- **Проблема')
-                    
-                    # Подсчитываем количество отзывов (ищем паттерн "Количество отзывов")
-                    import re
-                    review_match = re.search(r'Количество отзывов.*?(\d+)', content)
-                    review_count = review_match.group(1) if review_match else "?"
-                    
-                    # Создаем заголовок с статистикой
-                    if problem_count > 0 and review_count != "?":
-                        header = f"{category_name} ({problem_count} проблем, {review_count} отзывов)"
-                    elif problem_count > 0:
-                        header = f"{category_name} ({problem_count} проблем)"
-                    else:
-                        header = category_name
-                    
-                    parsed_sections[header] = content
-            
-            # Добавляем общие выводы если есть
-            if "## 📈 Общие выводы и рекомендации" in ai_analysis:
-                general_section = ai_analysis.split("## 📈 Общие выводы и рекомендации")[1]
-                parsed_sections["📈 Общие выводы и рекомендации"] = general_section.strip()
-            
-            return parsed_sections
-            
-        except Exception as e:
-            # Fallback: возвращаем весь анализ как есть
-            return {"📝 AI Анализ": ai_analysis}
+
 
     def group_reviews_by_context(reviews_texts: list) -> dict:
         """Группирует отзывы по контекстам для более точного AI анализа"""
@@ -1288,14 +1246,7 @@ def main():
             if analysis['ai_analysis']:
                 st.markdown("---")
                 st.subheader("🤖 AI Анализ")
-                
-                # Парсим AI анализ для отображения в раскрывающихся блоках
-                parsed_analysis = parse_ai_analysis_for_ui(analysis['ai_analysis'])
-                
-                # Отображаем каждую категорию в отдельном expander'е
-                for category_header, category_content in parsed_analysis.items():
-                    with st.expander(category_header, expanded=False):
-                        st.markdown(category_content)
+                st.markdown(analysis['ai_analysis'])
             else:
                 st.warning("AI-анализ недоступен. Проверьте API-ключ OpenAI")
         
