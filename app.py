@@ -22,6 +22,10 @@ from rapidfuzz import fuzz
 from itertools import groupby
 from urllib.parse import urlparse
 
+# Chat Completions: gpt-4-1106-preview и старые preview-модели сняты с API
+OPENAI_CHAT_MODEL = "gpt-4o"
+
+
 def main():
     st.set_page_config(
         page_title="Анализатор приложений",
@@ -756,7 +760,7 @@ def main():
             
             # Простой анализ без группировки
             response = client.chat.completions.create(
-                model="gpt-4",
+                model=OPENAI_CHAT_MODEL,
                 messages=[{
                     "role": "system",
                     "content": f"""Ты - эксперт по анализу отзывов пользователей. Проанализируй {total_reviews} отзывов.
@@ -826,7 +830,7 @@ def main():
                 category_text = "\n".join(category_reviews[:50])  # Ограничиваем отзывы
                 
                 response = client.chat.completions.create(
-                    model="gpt-4",
+                    model=OPENAI_CHAT_MODEL,
                     messages=[{
                         "role": "system",
                         "content": f"""Ты - эксперт по анализу отзывов пользователей. Проанализируй отзывы в категории "{category}".
@@ -939,7 +943,7 @@ def main():
                     prompt_data = category_prompts.get(category, {"focus": "общие проблемы", "context": ""})
                     
                     response = client.chat.completions.create(
-                        model="gpt-4-1106-preview",
+                        model=OPENAI_CHAT_MODEL,
                         messages=[{
                             "role": "system",
                             "content": f"""Ты - эксперт по анализу отзывов пользователей. Проанализируй отзывы в категории "{category}".
@@ -993,7 +997,7 @@ def main():
         """Оригинальная функция AI анализа (fallback)"""
         try:
             response = client.chat.completions.create(
-                model="gpt-4-1106-preview",
+                model=OPENAI_CHAT_MODEL,
                 messages=[{
                     "role": "system",
                     "content": """Ты - эксперт по анализу отзывов пользователей. Сгенерируй детальный анализ в следующем формате:
