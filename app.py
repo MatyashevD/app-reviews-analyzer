@@ -22,9 +22,6 @@ from rapidfuzz import fuzz
 from itertools import groupby
 from urllib.parse import urlparse
 
-# Chat Completions: gpt-4-1106-preview и старые preview-модели сняты с API
-OPENAI_CHAT_MODEL = "gpt-4o"
-
 
 def main():
     st.set_page_config(
@@ -79,6 +76,16 @@ def main():
         st.stop()
 
     client = OpenAI(api_key=st.secrets["openai_api_key"])
+
+    # Модель Chat Completions: по умолчанию gpt-4o; опционально openai_model в secrets.
+    # Старые preview ID сняты с API (404) — подменяем на gpt-4o.
+    _deprecated_openai_models = frozenset({
+        "gpt-4-1106-preview",
+        "gpt-4-0125-preview",
+        "gpt-4-vision-preview",
+    })
+    _raw_model = str(st.secrets.get("openai_model", "gpt-4o")).strip() or "gpt-4o"
+    chat_model = "gpt-4o" if _raw_model in _deprecated_openai_models else _raw_model
 
     # Инициализируем NLTK для анализа текста
     try:
@@ -760,7 +767,7 @@ def main():
             
             # Простой анализ без группировки
             response = client.chat.completions.create(
-                model=OPENAI_CHAT_MODEL,
+                model=chat_model,
                 messages=[{
                     "role": "system",
                     "content": f"""Ты - эксперт по анализу отзывов пользователей. Проанализируй {total_reviews} отзывов.
@@ -830,7 +837,7 @@ def main():
                 category_text = "\n".join(category_reviews[:50])  # Ограничиваем отзывы
                 
                 response = client.chat.completions.create(
-                    model=OPENAI_CHAT_MODEL,
+                    model=chat_model,
                     messages=[{
                         "role": "system",
                         "content": f"""Ты - эксперт по анализу отзывов пользователей. Проанализируй отзывы в категории "{category}".
@@ -943,7 +950,7 @@ def main():
                     prompt_data = category_prompts.get(category, {"focus": "общие проблемы", "context": ""})
                     
                     response = client.chat.completions.create(
-                        model=OPENAI_CHAT_MODEL,
+                        model=chat_model,
                         messages=[{
                             "role": "system",
                             "content": f"""Ты - эксперт по анализу отзывов пользователей. Проанализируй отзывы в категории "{category}".
@@ -997,7 +1004,7 @@ def main():
         """Оригинальная функция AI анализа (fallback)"""
         try:
             response = client.chat.completions.create(
-                model=OPENAI_CHAT_MODEL,
+                model=chat_model,
                 messages=[{
                     "role": "system",
                     "content": """Ты - эксперт по анализу отзывов пользователей. Сгенерируй детальный анализ в следующем формате:
